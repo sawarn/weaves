@@ -57,7 +57,7 @@ export function FullpageScroll({ children }: Props) {
   return (
     <div
       ref={rootRef}
-      className="h-screen w-full overflow-y-auto scroll-smooth"
+      className="h-[100dvh] w-full overflow-y-auto scroll-smooth"
     >
       {childArray.map((child, index) => (
         <div

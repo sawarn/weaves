@@ -1,6 +1,7 @@
 import { Instrument_Sans } from "next/font/google";
 import { Footer } from "@/components/footer";
 import { FullpageScroll } from "@/components/fullpage-scroll";
+import { ThemedLogo } from "@/components/themed-logo";
 import Image from "next/image";
 
 const instrumentSans = Instrument_Sans({
@@ -36,40 +37,42 @@ export default function Home() {
       </section>
 
       {/* Section 2: Our work */}
-      <section className="min-h-screen w-full snap-start bg-background text-foreground py-9">
-        <div className="mx-auto flex min-h-screen w-full max-w-[95rem] flex-col justify-center px-9 sm:px-18 py-16">
+      <section className="min-h-screen w-full snap-start bg-background py-9 text-foreground">
+        <div className="mx-auto flex min-h-screen w-full max-w-[95rem] flex-col justify-center px-4 py-16 min-[481px]:px-6 min-[769px]:px-9 min-[1025px]:px-9">
           {/* Header section */}
-          <div className="mb-12 sm:mb-16 grid grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-52 items-center">
-            <div className="-mt-24">
+          <div className="mb-12 grid grid-cols-1 items-center gap-8 min-[769px]:mb-16 min-[769px]:grid-cols-2 min-[769px]:gap-12 min-[1025px]:gap-52">
+            <div className="min-[1025px]:-mt-24 min-[1025px]:ml-10">
               <p className="text-xs font-medium uppercase tracking-wider text-foreground/50 mb-3">
                 Weaves Studio
               </p>
-              <h2 className={`${instrumentSans.className} text-[clamp(2.5rem,5vw,4rem)] font-normal leading-[1.1] tracking-tight`}>
+              <h2 className={`${instrumentSans.className} text-[clamp(2.35rem,4.7vw,3.75rem)] font-normal leading-[1.1] tracking-tight`}>
                 A design studio.
               </h2>
             </div>
             <div className="flex flex-col">
-              <p className="text-base text-foreground/70 sm:text-lg leading-tight whitespace-nowrap">
+              <p className="text-base leading-tight text-foreground/70 min-[769px]:text-lg">
                 We work with brands and individuals to create visuals that<br />
                 truly engage audiences. By combining AI technology with<br />
-                creative design, we're leading the way in this exciting<br />
+                creative design, we&apos;re leading the way in this exciting<br />
                 industry transformation.
               </p>
-              <div className="mt-0 flex items-center gap-6">
-                <div className="relative h-[80px] w-[80px]">
-                  <Image
-                    src="/images/Image from Chronicle HQ.png"
+              <div className="mt-4 flex items-center gap-4 min-[769px]:mt-0 min-[769px]:gap-6">
+                <div className="relative h-14 w-14 min-[769px]:h-[80px] min-[769px]:w-[80px]">
+                  <ThemedLogo
+                    lightSrc="/images/Image from Chronicle HQ.png"
+                    darkSrc="/images/Image from Chronicle HQ.png"
                     alt="Logo 1"
-                    fill
                     className="object-contain"
+                    darkClassName="invert"
                   />
                 </div>
-                <div className="relative h-[80px] w-[80px]">
-                  <Image
-                    src="/images/Image from Chronicle HQ (1).png"
+                <div className="relative h-14 w-14 min-[769px]:h-[80px] min-[769px]:w-[80px]">
+                  <ThemedLogo
+                    lightSrc="/images/Image from Chronicle HQ (1).png"
+                    darkSrc="/images/Image from Chronicle HQ (1)-transparent.png"
                     alt="Logo 2"
-                    fill
                     className="object-contain"
+                    darkClassName="invert"
                   />
                 </div>
               </div>
@@ -77,8 +80,11 @@ export default function Home() {
           </div>
 
           {/* Grid of 4 images */}
-          <div className="grid grid-cols-2 sm:grid-cols-[2.95fr_2.05fr_2.95fr_2.05fr] gap-2 sm:gap-3" style={{ gridAutoRows: '330px' }}>
-            <div className="relative overflow-hidden rounded-lg bg-foreground/5">
+          <div
+            className="mx-auto grid w-full grid-cols-1 gap-2 min-[481px]:grid-cols-2 min-[481px]:gap-2 min-[769px]:w-[94%] min-[769px]:grid-cols-[2.95fr_2.05fr_2.95fr_2.05fr] min-[769px]:gap-3"
+            style={{ gridAutoRows: "330px" }}
+          >
+            <div className="relative overflow-hidden rounded-lg bg-foreground/5 min-[769px]:w-[94%] min-[769px]:justify-self-center">
               <Image
                 src="/images/Merch Jacket Display Jan-Feb 2026.png"
                 alt="Merch Jacket"
@@ -94,7 +100,7 @@ export default function Home() {
                 className="object-cover"
               />
             </div>
-            <div className="relative overflow-hidden rounded-lg bg-foreground/5">
+            <div className="relative overflow-hidden rounded-lg bg-foreground/5 min-[769px]:w-[94%] min-[769px]:justify-self-center">
               <Image
                 src="/images/Exploration Minimal Editorial Setting Feb 7 2026.png"
                 alt="Exploration Minimal"
@@ -115,8 +121,8 @@ export default function Home() {
       </section>
 
       {/* Section 3: Services */}
-      <section className="min-h-screen w-full snap-start bg-background text-foreground py-9">
-        <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col justify-start px-6 sm:px-12 pt-2 pb-16">
+      <section className="min-h-screen w-full snap-start bg-background py-9 text-foreground">
+        <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col justify-start px-4 pt-2 pb-16 min-[481px]:px-6 min-[769px]:px-10 min-[1025px]:px-12">
           {/* Top: Weaves Studio + Description */}
           <div className="mb-16">
             <p className="text-xs font-medium uppercase tracking-wider text-foreground/50 mb-8">
@@ -130,10 +136,10 @@ export default function Home() {
             </h2>
             
             {/* Image holders */}
-            <div className="-mt-10 ml-60 flex items-start">
-              <div className="flex flex-col mr-8">
+            <div className="-mt-10 flex items-start min-[1025px]:ml-60 max-[1024px]:mt-10 max-[1024px]:flex-col max-[1024px]:gap-10">
+              <div className="flex flex-col min-[1025px]:mr-8">
                 {/* First horizontal image holder */}
-                <div className="w-75 h-50 relative overflow-hidden rounded-lg bg-foreground/5 mt-20">
+                <div className="relative mt-4 h-56 w-full max-w-md overflow-hidden rounded-lg bg-foreground/5 min-[769px]:h-64 min-[1025px]:mt-20 min-[1025px]:h-50 min-[1025px]:w-75">
                   <Image
                     src="/images/Image from Chronicle HQ (2).png"
                     alt="Scale"
@@ -154,9 +160,9 @@ export default function Home() {
               </div>
               
               {/* Second vertical image holder with Marketing text above */}
-              <div className="flex flex-col -mt-32 mr-16">
+              <div className="flex flex-col max-[1024px]:gap-4 min-[1025px]:-mt-32 min-[1025px]:mr-16">
                 {/* Marketing text above image */}
-                <div className="mb-6 w-[15.375rem]">
+                <div className="mb-2 w-full max-w-md min-[1025px]:mb-6 min-[1025px]:w-[15.375rem]">
                   <h3 className="text-base font-semibold mb-1.5">Marketing</h3>
                   <p className="text-base text-foreground/60 leading-snug">
                     Bold landing pages that<br />
@@ -167,7 +173,7 @@ export default function Home() {
                 </div>
                 
                 {/* Vertical image holder */}
-                <div className="w-[17rem] h-[25rem] relative overflow-hidden rounded-lg bg-foreground/5">
+                <div className="relative h-72 w-full max-w-md overflow-hidden rounded-lg bg-foreground/5 min-[769px]:h-80 min-[1025px]:h-[25rem] min-[1025px]:w-[17rem]">
                   <Image
                     src="/images/CleanShot Sept 4 2025.png"
                     alt="Marketing"
@@ -178,9 +184,9 @@ export default function Home() {
               </div>
               
               {/* Third image holder with Product design text below */}
-              <div className="flex flex-col -mt-40">
+              <div className="flex flex-col min-[1025px]:-mt-40">
                 {/* Third image holder */}
-                <div className="w-[16rem] h-[18.125rem] relative overflow-hidden rounded-lg bg-foreground/5">
+                <div className="relative h-64 w-full max-w-md overflow-hidden rounded-lg bg-foreground/5 min-[769px]:h-72 min-[1025px]:h-[18.125rem] min-[1025px]:w-[16rem]">
                   <Image
                     src="/images/CleanShot Sept 4 2025.gif"
                     alt="Product"
@@ -190,7 +196,7 @@ export default function Home() {
                 </div>
                 
                 {/* Product design text below image */}
-                <div className="mt-4 w-[16rem]">
+                <div className="mt-4 w-full max-w-md min-[1025px]:w-[16rem]">
                   <h3 className="text-base font-semibold mb-1.5">Product design</h3>
                   <p className="text-base text-foreground/60 leading-snug">
                     Elevated user experiences with<br />
@@ -219,10 +225,10 @@ export default function Home() {
       </section>
 
       {/* Section 4: Large Image with Text */}
-      <section className="min-h-screen w-full snap-start bg-background text-foreground py-9">
+      <section className="min-h-screen w-full snap-start bg-background py-9 text-foreground">
         <div className="mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center px-0 sm:px-0 py-0">
           {/* Large image box with text at bottom right */}
-          <div className="relative w-[calc(100%+0.25rem)] h-[91vh] -mx-2 sm:w-[calc(100%+0.5rem)] sm:h-[91vh] sm:-mx-1 overflow-hidden rounded-lg bg-foreground/5">
+          <div className="relative h-[91vh] w-[calc(100%+0.25rem)] -mx-2 overflow-hidden rounded-lg bg-foreground/5 sm:-mx-1 sm:h-[91vh] sm:w-[calc(100%+0.5rem)]">
             <Image
               src="/images/alleyway.png"
               alt="Our work showcase"
@@ -231,8 +237,8 @@ export default function Home() {
             />
             
             {/* Text overlay at bottom right */}
-            <div className="absolute bottom-8 right-8 max-w-4xl text-right">
-              <p className="text-[1.5rem] text-white/90 leading-tight font-medium sm:text-[2rem]">
+            <div className="absolute right-4 bottom-4 left-4 max-w-4xl text-left min-[769px]:right-8 min-[769px]:bottom-8 min-[769px]:left-auto min-[769px]:text-right">
+              <p className="text-[clamp(1rem,3.6vw,2rem)] leading-tight font-medium text-white/90">
                 Logo animation, Web design, Brand identity,<br />
                 Launch videos, Brand playbook, Marketing,<br />
                 Product design, Landing pages
@@ -243,18 +249,18 @@ export default function Home() {
       </section>
 
       {/* Section 5: Process */}
-      <section className="min-h-screen w-full snap-start bg-background text-foreground py-9">
-        <div className="mx-auto flex min-h-screen w-full max-w-7xl items-start px-6 sm:px-12 py-16 pt-32">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 w-full">
+      <section className="min-h-screen w-full snap-start bg-background py-9 text-foreground">
+        <div className="mx-auto flex min-h-screen w-full max-w-7xl items-start px-4 py-16 pt-20 min-[481px]:px-6 min-[769px]:px-10 min-[1025px]:px-12 min-[1025px]:pt-32">
+          <div className="grid w-full grid-cols-1 gap-12 min-[1025px]:grid-cols-2 min-[1025px]:gap-20">
             {/* Left column: Text */}
             <div className="flex flex-col justify-start">
               <p className="text-xs font-medium uppercase tracking-wider text-foreground/50 mb-8">
                 Weaves Studio
               </p>
               
-              <div className="ml-8 w-full">
-                <h2 className={`${instrumentSans.className} text-[clamp(1.75rem,3.5vw,2.3rem)] font-medium leading-[1.15] mb-6 whitespace-nowrap`}>
-                  There isn't one formula for<br />
+              <div className="w-full min-[1025px]:ml-8">
+                <h2 className={`${instrumentSans.className} mb-6 text-[clamp(1.75rem,3.5vw,2.3rem)] font-medium leading-[1.15]`}>
+                  There isn&apos;t one formula for<br />
                   powerful visuals.<br />
                   But there is a structured way to<br />
                   create them with intention.
@@ -267,38 +273,38 @@ export default function Home() {
             </div>
 
             {/* Right column: Numbered list and image */}
-            <div className="flex flex-col justify-center ml-[15%] w-[70%] mt-8">
+            <div className="mt-8 flex w-full flex-col justify-center min-[1025px]:ml-[15%] min-[1025px]:w-[70%]">
               {/* Numbered list */}
               <div className="space-y-0 mb-8">
                 <div className="flex items-start gap-4 py-3 relative">
-                  <span className="text-[clamp(1rem,1.8vw,1.25rem)] text-black font-medium">01</span>
-                  <span className="text-[clamp(1.125rem,2vw,1.5rem)] text-black">Proposal & scope sign off</span>
-                  <div className="absolute top-0 left-0 w-[110%] h-[2px] bg-black"></div>
-                  <div className="absolute bottom-0 left-0 w-[110%] h-[2px] bg-black"></div>
+                  <span className="text-[clamp(1rem,1.8vw,1.25rem)] font-medium text-foreground">01</span>
+                  <span className="text-[clamp(1.125rem,2vw,1.5rem)] text-foreground">Proposal & scope sign off</span>
+                  <div className="absolute top-0 left-0 h-[2px] w-full bg-foreground min-[1025px]:w-[110%]"></div>
+                  <div className="absolute bottom-0 left-0 h-[2px] w-full bg-foreground min-[1025px]:w-[110%]"></div>
                 </div>
                 <div className="flex items-start gap-4 py-3 relative">
-                  <span className="text-[clamp(1rem,1.8vw,1.25rem)] text-black font-medium">02</span>
-                  <span className="text-[clamp(1.125rem,2vw,1.5rem)] text-black">Get to know your brand</span>
-                  <div className="absolute bottom-0 left-0 w-[110%] h-[2px] bg-black"></div>
+                  <span className="text-[clamp(1rem,1.8vw,1.25rem)] font-medium text-foreground">02</span>
+                  <span className="text-[clamp(1.125rem,2vw,1.5rem)] text-foreground">Get to know your brand</span>
+                  <div className="absolute bottom-0 left-0 h-[2px] w-full bg-foreground min-[1025px]:w-[110%]"></div>
                 </div>
                 <div className="flex items-start gap-4 py-3 relative">
-                  <span className="text-[clamp(1rem,1.8vw,1.25rem)] text-black font-medium">03</span>
-                  <span className="text-[clamp(1.125rem,2vw,1.5rem)] text-black">Storyboarding</span>
-                  <div className="absolute bottom-0 left-0 w-[110%] h-[2px] bg-black"></div>
+                  <span className="text-[clamp(1rem,1.8vw,1.25rem)] font-medium text-foreground">03</span>
+                  <span className="text-[clamp(1.125rem,2vw,1.5rem)] text-foreground">Storyboarding</span>
+                  <div className="absolute bottom-0 left-0 h-[2px] w-full bg-foreground min-[1025px]:w-[110%]"></div>
                 </div>
                 <div className="flex items-start gap-4 py-3 relative">
-                  <span className="text-[clamp(1rem,1.8vw,1.25rem)] text-black font-medium">04</span>
-                  <span className="text-[clamp(1.125rem,2vw,1.5rem)] text-black">Asset development</span>
-                  <div className="absolute bottom-0 left-0 w-[110%] h-[2px] bg-black"></div>
+                  <span className="text-[clamp(1rem,1.8vw,1.25rem)] font-medium text-foreground">04</span>
+                  <span className="text-[clamp(1.125rem,2vw,1.5rem)] text-foreground">Asset development</span>
+                  <div className="absolute bottom-0 left-0 h-[2px] w-full bg-foreground min-[1025px]:w-[110%]"></div>
                 </div>
                 <div className="flex items-start gap-4 py-3 relative">
-                  <span className="text-[clamp(1rem,1.8vw,1.25rem)] text-black font-medium">05</span>
-                  <span className="text-[clamp(1.125rem,2vw,1.5rem)] text-black">Refine & deliver</span>
+                  <span className="text-[clamp(1rem,1.8vw,1.25rem)] font-medium text-foreground">05</span>
+                  <span className="text-[clamp(1.125rem,2vw,1.5rem)] text-foreground">Refine & deliver</span>
                 </div>
               </div>
 
               {/* Image */}
-              <div className="relative w-[110%] h-[clamp(300px,35vh,500px)] overflow-hidden rounded-lg bg-foreground/5">
+              <div className="relative h-[clamp(260px,35vh,500px)] w-full overflow-hidden rounded-lg bg-foreground/5 min-[1025px]:w-[110%]">
                 <Image
                   src="/images/Flora Fashion Photoshoot Layout.jpg"
                   alt="Process"
@@ -312,7 +318,7 @@ export default function Home() {
       </section>
 
       {/* Section 6: Selected Work */}
-      <section className={`${instrumentSans.className} min-h-screen w-full snap-start bg-background text-foreground py-9`}>
+      <section className={`${instrumentSans.className} min-h-screen w-full snap-start bg-background py-9 text-foreground`}>
         <div className="mx-auto flex min-h-screen w-full max-w-6xl pr-0 pt-4 pb-4 pl-0 sm:pr-0 sm:pt-8 sm:pb-8 sm:pl-0">
           {/* Green rounded box on the left, fading to the right */}
           <div className="relative w-[calc(100%+2rem)] -ml-8 sm:w-[calc(100%+4rem)] sm:-ml-16">
@@ -328,11 +334,11 @@ export default function Home() {
 
                 <div className="relative flex h-full min-h-[70vh] flex-col sm:min-h-[75vh]">
                   <div className="mt-auto">
-                    <div className="text-sm font-semibold text-black transition duration-200 ease-out hover:text-black hover:scale-[1.16] origin-left mb-8">
+                    <div className="origin-left mb-8 text-sm font-semibold text-black transition duration-200 ease-out hover:scale-[1.16] hover:text-black dark:text-foreground dark:hover:text-foreground">
                       Weaves Studio
                     </div>
 
-                    <h2 className="text-[clamp(4.5rem,8.5vw,8.5rem)] font-medium leading-[0.95] tracking-tight text-black transition duration-200 ease-out hover:text-black hover:scale-[1.14] origin-left">
+                    <h2 className="origin-left text-[clamp(3rem,8.5vw,8.5rem)] font-medium leading-[0.95] tracking-tight text-black transition duration-200 ease-out hover:scale-[1.14] hover:text-black dark:text-foreground dark:hover:text-foreground">
                       Selected<br />
                       work
                     </h2>
@@ -345,21 +351,21 @@ export default function Home() {
       </section>
 
       {/* Section 7: Featured Work Detail */}
-      <section className="min-h-screen w-full snap-start bg-background text-foreground py-9">
-        <div className="mx-auto flex min-h-screen w-full max-w-7xl items-center px-6 sm:px-12 py-16">
-          <div className="flex items-start gap-24 w-full">
+      <section className="min-h-screen w-full snap-start bg-background py-9 text-foreground">
+        <div className="mx-auto flex min-h-screen w-full max-w-7xl items-center px-4 py-16 min-[481px]:px-6 min-[769px]:px-10 min-[1025px]:px-12">
+          <div className="flex w-full flex-col items-start gap-10 min-[1025px]:flex-row min-[1025px]:gap-24">
             {/* Left: Text */}
-            <div className="flex flex-col max-w-md h-[610px] justify-between">
+            <div className="flex h-auto max-w-md flex-col justify-between min-[1025px]:h-[610px]">
               <p className="text-xs font-medium uppercase tracking-wider text-foreground/50">
                 Weaves Studio
               </p>
               
-              <div className="flex-1 flex flex-col justify-center mt-20">
+              <div className="mt-10 flex flex-1 flex-col justify-center min-[1025px]:mt-20">
                 <h2 className={`${instrumentSans.className} text-[clamp(2.25rem,3.8vw,3.5rem)] font-medium leading-[1.1] tracking-tight mb-4`}>
                   Blue Tokai
                 </h2>
                 
-                <p className={`${instrumentSans.className} text-[clamp(0.9375rem,1.4vw,1.125rem)] text-foreground/60 leading-snug whitespace-nowrap`}>
+                <p className={`${instrumentSans.className} text-[clamp(0.9375rem,1.4vw,1.125rem)] leading-snug text-foreground/60`}>
                   A brand campaign with a modern<br />
                   ode to street culture, tagging and<br />
                   graffiti.
@@ -374,13 +380,13 @@ export default function Home() {
             </div>
 
             {/* Right: Image with Featured work label */}
-            <div className="flex flex-col">
-              <p className="text-xs font-medium uppercase tracking-wider text-foreground/50 text-right mb-4">
+            <div className="flex w-full max-w-[800px] flex-col">
+              <p className="mb-4 text-left text-xs font-medium uppercase tracking-wider text-foreground/50 min-[1025px]:text-right">
                 Featured work
               </p>
-              <div className="relative w-[800px] h-[610px] overflow-hidden rounded-lg bg-foreground/5">
+              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-foreground/5 min-[1025px]:h-[610px] min-[1025px]:w-[800px] min-[1025px]:aspect-auto">
                 <Image
-                  src="/images/Image from Chronicle HQ (3).png"
+                  src="/images/Coffee Product Photography Mar 2 2026 (1).png"
                   alt="Blue Tokai"
                   fill
                   className="object-cover"
@@ -392,23 +398,23 @@ export default function Home() {
       </section>
 
       {/* Section 8: Product Grid */}
-      <section className="min-h-screen w-full snap-start bg-background text-foreground py-9">
-        <div className="mx-auto flex min-h-screen w-full max-w-7xl items-center px-6 sm:px-12 py-16">
-          <div className="flex items-start gap-12 w-full">
+      <section className="min-h-screen w-full snap-start bg-background py-9 text-foreground">
+        <div className="mx-auto flex min-h-screen w-full max-w-7xl items-center px-4 py-16 min-[481px]:px-6 min-[769px]:px-10 min-[1025px]:px-12">
+          <div className="flex w-full flex-col items-start gap-8 min-[1025px]:flex-row min-[1025px]:gap-12">
             {/* Left: Text */}
-            <div className="flex flex-col self-stretch max-w-xs">
+            <div className="flex max-w-xl flex-col self-stretch min-[1025px]:max-w-xs">
               <h2 className={`${instrumentSans.className} text-[clamp(2.2rem,3.9vw,3.3rem)] font-medium leading-[1.1] tracking-tight mb-6 mt-8`}>
                 Feature title
               </h2>
               
-              <p className={`${instrumentSans.className} mt-[13rem] text-[clamp(0.875rem,1.2vw,1rem)] text-foreground/60 leading-relaxed whitespace-nowrap`}>
+              <p className={`${instrumentSans.className} mt-8 text-[clamp(0.875rem,1.2vw,1rem)] leading-relaxed text-foreground/60 min-[1025px]:mt-[13rem]`}>
                 Write a brief introduction of the app, highlight<br />
                 key features and benefits to the core audience.
               </p>
             </div>
 
             {/* Right: Image Grid */}
-            <div className="relative left-8 sm:left-16 flex-1 grid grid-cols-2 gap-4">
+            <div className="relative left-0 grid flex-1 grid-cols-1 gap-4 min-[769px]:grid-cols-2 min-[1025px]:left-8 min-[1441px]:left-16">
               {/* Column 1 - 3 images stacked */}
               <div className="flex flex-col gap-4">
                 <div className="relative w-full h-[210px] overflow-hidden rounded-lg bg-foreground/5">
@@ -485,17 +491,17 @@ export default function Home() {
       </section>
 
       {/* Section 9: Showreel */}
-      <section className="min-h-screen w-full snap-start bg-background text-foreground py-9">
-        <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 sm:px-12 py-16">
+      <section className="min-h-screen w-full snap-start bg-background py-9 text-foreground">
+        <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-16 min-[481px]:px-6 min-[769px]:px-10 min-[1025px]:px-12">
           {/* Top: SHOWREEL label */}
           <p className="text-xs font-medium uppercase tracking-wider text-foreground/50 mb-8">
             SHOWREEL
           </p>
 
           {/* Main content: Large image left, grid right */}
-          <div className="flex-1 flex gap-16">
+          <div className="flex flex-1 flex-col gap-6 min-[1025px]:flex-row min-[1025px]:gap-16">
             {/* Left: Large video/image */}
-            <div className="relative w-[65%] overflow-hidden rounded-lg bg-foreground/5">
+            <div className="relative h-[42vh] w-full overflow-hidden rounded-lg bg-foreground/5 min-[769px]:h-[48vh] min-[1025px]:h-auto min-[1025px]:w-[65%]">
               <Image
                 src="/images/AI Generated Image.webp"
                 alt="Showreel main"
@@ -505,8 +511,8 @@ export default function Home() {
             </div>
 
             {/* Right: Grid of 3 images */}
-            <div className="w-[30%] flex flex-col gap-6">
-              <div className="relative w-full h-full overflow-hidden rounded-lg bg-foreground/5">
+            <div className="grid w-full grid-cols-1 gap-4 min-[481px]:grid-cols-3 min-[481px]:gap-6 min-[1025px]:flex min-[1025px]:w-[30%] min-[1025px]:grid-cols-none min-[1025px]:flex-col">
+              <div className="relative h-[24vh] w-full overflow-hidden rounded-lg bg-foreground/5 min-[1025px]:h-full">
                 <Image
                   src="/images/Summer Picnic Setup 2026.png"
                   alt="Showreel 1"
@@ -514,7 +520,7 @@ export default function Home() {
                   className="object-cover"
                 />
               </div>
-              <div className="relative w-full h-full overflow-hidden rounded-lg bg-foreground/5">
+              <div className="relative h-[24vh] w-full overflow-hidden rounded-lg bg-foreground/5 min-[1025px]:h-full">
                 <Image
                   src="/images/Beverage Ad Concept Mar 2026.png"
                   alt="Showreel 2"
@@ -522,7 +528,7 @@ export default function Home() {
                   className="object-cover"
                 />
               </div>
-              <div className="relative w-full h-full overflow-hidden rounded-lg bg-foreground/5">
+              <div className="relative h-[24vh] w-full overflow-hidden rounded-lg bg-foreground/5 min-[1025px]:h-full">
                 <Image
                   src="/images/Picnic Scene Mar 2 2026.png"
                   alt="Showreel 3"
@@ -536,15 +542,15 @@ export default function Home() {
       </section>
 
       {/* Section 10: Grid Quadrants */}
-      <section className="min-h-screen w-full snap-start bg-background text-foreground py-9">
-        <div className="mx-auto flex min-h-screen w-full items-center justify-center px-6 sm:px-12 py-16">
+      <section className="min-h-screen w-full snap-start bg-background py-9 text-foreground">
+        <div className="mx-auto flex min-h-screen w-full items-center justify-center px-4 py-16 min-[481px]:px-6 min-[769px]:px-10 min-[1025px]:px-12">
           {/* 2x2 Grid with dividing lines */}
-          <div className="relative w-full max-w-7xl aspect-[16/9]">
+          <div className="relative aspect-[4/5] w-full max-w-7xl min-[481px]:aspect-[16/11] min-[1025px]:aspect-[16/9]">
             {/* Vertical dividing line */}
-            <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-black/30 -translate-x-1/2 z-10"></div>
+            <div className="absolute top-0 bottom-0 left-1/2 z-10 w-[1px] -translate-x-1/2 bg-foreground/30"></div>
             
             {/* Horizontal dividing line */}
-            <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-black/30 -translate-y-1/2 z-10"></div>
+            <div className="absolute top-1/2 right-0 left-0 z-10 h-[1px] -translate-y-1/2 bg-foreground/30"></div>
 
             {/* Grid of 4 equal images with padding */}
             <div className="grid grid-cols-2 grid-rows-2 gap-8 h-full w-full p-4">
@@ -593,15 +599,15 @@ export default function Home() {
       </section>
 
       {/* Section 11: Our Values */}
-      <section className="min-h-screen w-full snap-start bg-background text-foreground py-9">
-        <div className="mx-auto flex min-h-screen w-full max-w-7xl items-center px-6 sm:px-12 py-16">
-          <div className="flex items-start gap-12 w-full">
+      <section className="min-h-screen w-full snap-start bg-background py-9 text-foreground">
+        <div className="mx-auto flex min-h-screen w-full max-w-7xl items-center px-4 py-16 min-[481px]:px-6 min-[769px]:px-10 min-[1025px]:px-12">
+          <div className="flex w-full flex-col items-start gap-10 min-[1025px]:flex-row min-[1025px]:gap-12">
             {/* Left: Our values heading */}
-            <div className="w-1/2 flex flex-col">
+            <div className="flex w-full flex-col min-[1025px]:w-1/2">
               <p className="text-xs font-medium uppercase tracking-wider text-foreground/50 mb-8">
                 Flux Studio
               </p>
-              <div className="mt-[35%]">
+              <div className="mt-4 min-[1025px]:mt-[35%]">
                 <h2 className={`${instrumentSans.className} text-[clamp(4rem,7vw,6rem)] font-medium leading-[1.05] tracking-tight text-foreground`}>
                   Our<br />
                   values
@@ -610,51 +616,51 @@ export default function Home() {
             </div>
 
             {/* Right: Three value blocks with dividing lines */}
-            <div className="w-1/2 flex flex-col relative">
+            <div className="relative flex w-full flex-col min-[1025px]:w-1/2">
               {/* Vertical line connecting horizontal lines */}
               <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-foreground/30"></div>
               
               {/* Value 1 */}
-              <div className="py-6 border-b border-foreground/30 pl-8">
+              <div className="border-b border-foreground/30 py-6 pl-4 min-[481px]:pl-6 min-[769px]:pl-8">
                 <h3 className={`${instrumentSans.className} text-[clamp(1.5rem,2.5vw,2rem)] font-medium leading-[1.2] mb-3 text-foreground`}>
                   Move mountains
                 </h3>
-                <p className="text-base text-foreground/70 leading-snug whitespace-nowrap">
+                <p className="text-base leading-snug text-foreground/70">
                   The most powerful designs come from fearless exploration. When we<br />
                   push beyond safe choices and conventional patterns, we unlock<br />
                   possibilities that captivate audiences and elevate brands.
                 </p>
-                <p className="text-base text-foreground/70 leading-snug mt-2 whitespace-nowrap">
+                <p className="mt-2 text-base leading-snug text-foreground/70">
                   Every brief is an invitation to experiment with new techniques and<br />
-                  innovative storytelling approaches that make viewers stop and say "how<br />
-                  did they do that?"
+                  innovative storytelling approaches that make viewers stop and say &quot;how<br />
+                  did they do that?&quot;
                 </p>
               </div>
 
               {/* Value 2 */}
-              <div className="py-6 border-b border-foreground/30 pl-8">
+              <div className="border-b border-foreground/30 py-6 pl-4 min-[481px]:pl-6 min-[769px]:pl-8">
                 <h3 className={`${instrumentSans.className} text-[clamp(1.5rem,2.5vw,2rem)] font-medium leading-[1.2] mb-3 text-foreground`}>
                   Trust is the foundation
                 </h3>
-                <p className="text-base text-foreground/70 leading-snug whitespace-nowrap">
+                <p className="text-base leading-snug text-foreground/70">
                   When we commit to a vision, timeline, or deliverable, we become<br />
                   guardians of that promise.
                 </p>
-                <p className="text-base text-foreground/70 leading-snug mt-2 whitespace-nowrap">
+                <p className="mt-2 text-base leading-snug text-foreground/70">
                   Our clients invest not just money but belief in our ability to bring their<br />
                   stories to life through motion. We honor that trust by delivering exactly<br />
                   what we promised—on time, on brand, and beyond expectations. Trust<br />
-                  isn't just currency; it's the bridge to long-term partnerships.
+                  isn&apos;t just currency; it&apos;s the bridge to long-term partnerships.
                 </p>
               </div>
 
               {/* Value 3 */}
-              <div className="py-6 pl-8">
+              <div className="py-6 pl-4 min-[481px]:pl-6 min-[769px]:pl-8">
                 <h3 className={`${instrumentSans.className} text-[clamp(1.5rem,2.5vw,2rem)] font-medium leading-[1.2] mb-3 text-foreground`}>
                   Momentum creates magic
                 </h3>
                 <p className="text-base text-foreground/70 leading-snug">
-                  Great design isn't just about individual moments—it's about creating an unbroken flow that pulls viewers deeper into the experience. We craft experiences and brands that feel inevitable, that build anticipation, and create their own gravitational pull.
+                  Great design isn&apos;t just about individual moments—it&apos;s about creating an unbroken flow that pulls viewers deeper into the experience. We craft experiences and brands that feel inevitable, that build anticipation, and create their own gravitational pull.
                 </p>
                 <p className="text-base text-foreground/70 leading-snug mt-2">
                   When every element flows naturally into the next, the entire piece becomes greater than the sum of its parts.

@@ -25,16 +25,16 @@ export function Footer() {
                 <div className="absolute left-[-18%] top-[-25%] h-[150%] w-[55%] rounded-full bg-[radial-gradient(circle_at_center,_rgba(208,240,192,0.68),_transparent_65%)] blur-3xl dark:bg-[radial-gradient(circle_at_center,_rgba(208,240,192,0.12),_transparent_65%)]" />
               </div>
 
-              <div className="relative flex h-full min-h-[70vh] flex-col sm:min-h-[75vh]">
-                <div className="text-sm font-semibold text-black transition duration-200 ease-out hover:text-black hover:scale-[1.16] origin-left">
+              <div className="relative flex h-full min-h-[62vh] flex-col sm:min-h-[70vh]">
+                <div className="origin-left text-sm font-semibold text-black transition duration-200 ease-out hover:scale-[1.16] hover:text-black dark:text-foreground dark:hover:text-foreground">
                   Weave Studio
                 </div>
 
                 <div className="mt-16 sm:mt-20 pr-8 sm:pr-16">
-                  <h2 className="text-[clamp(4.1rem,7.9vw,7.6rem)] font-semibold leading-[0.95] tracking-tight text-black transition duration-200 ease-out hover:text-black hover:scale-[1.14] origin-left">
+                  <h2 className="origin-left text-[clamp(3rem,7.9vw,7.6rem)] font-semibold leading-[0.95] tracking-tight text-black transition duration-200 ease-out hover:scale-[1.14] hover:text-black dark:text-foreground dark:hover:text-foreground">
                     Let’s work together.
                   </h2>
-                  <p className="mt-5 max-w-xl text-sm font-medium text-black/75 sm:text-base transition duration-200 ease-out hover:text-black/75 hover:scale-[1.12] origin-left">
+                  <p className="origin-left mt-5 max-w-xl text-sm font-medium text-black/75 transition duration-200 ease-out hover:scale-[1.12] hover:text-black/75 dark:text-foreground/75 dark:hover:text-foreground/75 sm:text-base">
                     If this all sounds like what your brand needs.
                   </p>
 
@@ -43,12 +43,12 @@ export function Footer() {
                       href="https://cal.com/"
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-full bg-background/72 px-4 py-2.5 text-xs font-semibold text-black backdrop-blur transition duration-200 ease-out hover:bg-background/92 hover:text-black hover:scale-[1.14] origin-left shadow-[0_10px_28px_rgba(0,0,0,0.08)] hover:shadow-[0_22px_64px_rgba(0,0,0,0.14)] dark:shadow-[0_10px_28px_rgba(0,0,0,0.34)] dark:hover:shadow-[0_22px_64px_rgba(0,0,0,0.46)]"
+                      className="origin-left inline-flex items-center gap-2 rounded-full bg-background/72 px-4 py-2.5 text-xs font-semibold text-black shadow-[0_10px_28px_rgba(0,0,0,0.08)] backdrop-blur transition duration-200 ease-out hover:scale-[1.14] hover:bg-background/92 hover:text-black hover:shadow-[0_22px_64px_rgba(0,0,0,0.14)] dark:text-foreground dark:shadow-[0_10px_28px_rgba(0,0,0,0.34)] dark:hover:text-foreground dark:hover:shadow-[0_22px_64px_rgba(0,0,0,0.46)]"
                     >
                       <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-foreground/10 text-[10px]">
                         ↗
                       </span>
-                      <span className="text-black/75 hover:text-black/75">
+                      <span className="text-black/75 hover:text-black/75 dark:text-foreground/75 dark:hover:text-foreground/75">
                         [Replace with your cal.com link]
                       </span>
                       <span>cal.com</span>
@@ -59,14 +59,14 @@ export function Footer() {
                 <div className="mt-auto pt-12">
                   <div className="grid gap-10 sm:grid-cols-2 sm:gap-12">
                     <div className="group transition duration-200 ease-out hover:scale-[1.12] origin-left">
-                      <div className="h-px w-full bg-gradient-to-r from-foreground/28 via-foreground/14 to-transparent transition group-hover:from-black/65 group-hover:via-black/24" />
-                      <div className="mt-3 text-[11px] font-medium text-black/75 transition group-hover:text-black/75">
+                      <div className="h-px w-full bg-gradient-to-r from-foreground/28 via-foreground/14 to-transparent transition group-hover:from-black/65 group-hover:via-black/24 dark:group-hover:from-foreground/65 dark:group-hover:via-foreground/24" />
+                      <div className="mt-3 text-[11px] font-medium text-black/75 transition group-hover:text-black/75 dark:text-foreground/75 dark:group-hover:text-foreground/75">
                         weave.design
                       </div>
                     </div>
                     <div className="group transition duration-200 ease-out hover:scale-[1.12] origin-left">
-                      <div className="h-px w-full bg-gradient-to-r from-foreground/28 via-foreground/14 to-transparent transition group-hover:from-black/65 group-hover:via-black/24" />
-                      <div className="mt-3 text-[11px] font-medium text-black/75 transition group-hover:text-black/75">
+                      <div className="h-px w-full bg-gradient-to-r from-foreground/28 via-foreground/14 to-transparent transition group-hover:from-black/65 group-hover:via-black/24 dark:group-hover:from-foreground/65 dark:group-hover:via-foreground/24" />
+                      <div className="mt-3 text-[11px] font-medium text-black/75 transition group-hover:text-black/75 dark:text-foreground/75 dark:group-hover:text-foreground/75">
                         © {year} Weavelabs. All rights reserved.
                       </div>
                     </div>
