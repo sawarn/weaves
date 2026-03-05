@@ -230,7 +230,7 @@ export default function Home() {
           {/* Large image box with text at bottom right */}
           <div className="relative h-[91vh] w-[calc(100%+0.25rem)] -mx-2 overflow-hidden rounded-lg bg-foreground/5 sm:-mx-1 sm:h-[91vh] sm:w-[calc(100%+0.5rem)]">
             <Image
-              src="/images/alleyway.png"
+              src="/images/grayscale-sea-waves.png"
               alt="Our work showcase"
               fill
               className="object-cover"
