@@ -1,0 +1,108 @@
+{
+  "$defs": {
+    "ModelProviderStatus": {
+      "enum": [
+        "active",
+        "disabled"
+      ],
+      "title": "ModelProviderStatus",
+      "type": "string"
+    },
+    "ModelProviderType": {
+      "enum": [
+        "openai",
+        "anthropic",
+        "gemini",
+        "azure_openai",
+        "bedrock",
+        "openai_compatible",
+        "local"
+      ],
+      "title": "ModelProviderType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "allowed_models": {
+      "items": {
+        "maxLength": 160,
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9._:/-]+$",
+        "type": "string"
+      },
+      "maxItems": 500,
+      "minItems": 1,
+      "title": "Allowed Models",
+      "type": "array"
+    },
+    "auth_ref": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Auth Ref"
+    },
+    "base_url": {
+      "anyOf": [
+        {
+          "maxLength": 2048,
+          "minLength": 8,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Base Url"
+    },
+    "display_name": {
+      "maxLength": 160,
+      "minLength": 1,
+      "title": "Display Name",
+      "type": "string"
+    },
+    "id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "org_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Org Id",
+      "type": "string"
+    },
+    "provider_type": {
+      "$ref": "#/$defs/ModelProviderType"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "status": {
+      "$ref": "#/$defs/ModelProviderStatus"
+    }
+  },
+  "required": [
+    "org_id",
+    "id",
+    "provider_type",
+    "display_name",
+    "allowed_models",
+    "status"
+  ],
+  "title": "ModelProvider",
+  "type": "object"
+}

@@ -1,0 +1,37 @@
+{
+  "$defs": {
+    "ModelMessageRole": {
+      "enum": [
+        "system",
+        "user",
+        "assistant"
+      ],
+      "title": "ModelMessageRole",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "content": {
+      "maxLength": 100000,
+      "minLength": 1,
+      "title": "Content",
+      "type": "string"
+    },
+    "role": {
+      "$ref": "#/$defs/ModelMessageRole"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "role",
+    "content"
+  ],
+  "title": "ModelMessage",
+  "type": "object"
+}

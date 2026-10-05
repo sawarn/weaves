@@ -1,0 +1,64 @@
+{
+  "$defs": {
+    "Permission": {
+      "enum": [
+        "organizations.admin",
+        "workspaces.admin",
+        "users.manage",
+        "roles.manage",
+        "models.manage",
+        "agents.manage",
+        "agents.run",
+        "workflows.manage",
+        "workflows.run",
+        "plugins.manage",
+        "artifacts.read",
+        "actions.approve",
+        "audit.read"
+      ],
+      "title": "Permission",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "maxLength": 160,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "org_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Org Id",
+      "type": "string"
+    },
+    "permissions": {
+      "items": {
+        "$ref": "#/$defs/Permission"
+      },
+      "title": "Permissions",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "org_id",
+    "name"
+  ],
+  "title": "Role",
+  "type": "object"
+}

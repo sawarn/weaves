@@ -1,0 +1,83 @@
+{
+  "$defs": {
+    "PrincipalStatus": {
+      "enum": [
+        "active",
+        "disabled"
+      ],
+      "title": "PrincipalStatus",
+      "type": "string"
+    },
+    "PrincipalType": {
+      "enum": [
+        "user",
+        "service_account",
+        "system",
+        "external_app"
+      ],
+      "title": "PrincipalType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "org_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Org Id",
+      "type": "string"
+    },
+    "principal_type": {
+      "$ref": "#/$defs/PrincipalType"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "status": {
+      "$ref": "#/$defs/PrincipalStatus"
+    },
+    "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+    },
+    "user_id": {
+      "anyOf": [
+        {
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "User Id"
+    }
+  },
+  "required": [
+    "created_at",
+    "updated_at",
+    "org_id",
+    "id",
+    "principal_type",
+    "status"
+  ],
+  "title": "Principal",
+  "type": "object"
+}

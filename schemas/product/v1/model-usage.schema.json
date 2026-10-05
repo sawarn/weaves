@@ -1,0 +1,33 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "input_tokens": {
+      "minimum": 0,
+      "title": "Input Tokens",
+      "type": "integer"
+    },
+    "output_tokens": {
+      "minimum": 0,
+      "title": "Output Tokens",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "total_tokens": {
+      "minimum": 0,
+      "title": "Total Tokens",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "input_tokens",
+    "output_tokens",
+    "total_tokens"
+  ],
+  "title": "ModelUsage",
+  "type": "object"
+}

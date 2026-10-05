@@ -1,69 +1,53 @@
-# Weaves
+# Weaves Platform Backend
 
-Weaves is a visual-first marketing website built with Next.js (App Router) and Tailwind CSS.
-It includes responsive section layouts, theme support (light/dark), and a media-heavy homepage experience.
+Weaves is a modular agent platform that connects organization systems and
+context to bounded agents and workflows. This repository contains the
+platform API, contracts, runtime, model and plugin gateways, and PostgreSQL
+storage adapter.
 
-## Tech Stack
+The dashboard is maintained separately in
+[`sawarn/weaves-app`](https://github.com/sawarn/weaves-app).
 
-- Next.js 15 (App Router)
-- React 19
-- Tailwind CSS 4
-- TypeScript
-- `next-themes` for theme switching
+## Run the backend
 
-## Local Development
+Requirements: Docker Compose.
 
-Install dependencies:
-
-```bash
-npm install
+```sh
+cp .env.example .env
+docker compose up --build
 ```
 
-Run the dev server:
+The API is at [http://localhost:8001](http://localhost:8001), its interactive
+API explorer is at [http://localhost:8001/docs](http://localhost:8001/docs),
+and readiness is reported at `/api/v0/health`. PostgreSQL data is kept in the
+`weaves-postgres` Docker volume.
 
-```bash
-npm run dev
+To run the frontend, follow the instructions in the frontend repository and
+set `WEAVES_API_BASE=http://localhost:8001/api/v0`.
+
+## Model provider
+
+Without `MODEL_API_KEY`, runs use the deterministic local model. To enable the
+OpenAI-compatible adapter, set `MODEL_API_KEY`; `MODEL_BASE_URL` defaults to
+`https://api.openai.com/v1` and `MODEL_NAME` defaults to `gpt-4o-mini`. Keep
+provider credentials in the backend environment and never commit them.
+
+## Development
+
+Install dependencies with:
+
+```sh
+python3 -m venv .venv
+.venv/bin/pip install -r backend/requirements-dev.txt
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+From `backend/`, use `pytest`, `ruff check .`, and `mypy` for the quality
+harness. Product contracts and JSON schemas are under
+`backend/weaves/product/contracts/v1` and `schemas/product/v1`.
 
-## Available Scripts
+## Current boundaries
 
-- `npm run dev` - start local dev server
-- `npm run build` - production build
-- `npm run start` - run production server
-- `npm run lint` - run ESLint
-
-## Project Structure
-
-- `src/app/page.tsx` - primary multi-section homepage
-- `src/app/layout.tsx` - root layout and global providers
-- `src/app/globals.css` - global styles and theme tokens
-- `src/components/` - reusable UI components
-- `public/images/` - static image assets used across sections
-
-## Theme Notes
-
-- Theme is managed with `next-themes`.
-- Toggle is mounted globally in layout.
-- For logos that require different assets per mode, use the `ThemedLogo` component at `src/components/themed-logo.tsx`.
-
-## Deployment (Vercel + GoDaddy Domain)
-
-Recommended setup: host on Vercel, keep DNS on GoDaddy.
-
-1. Push this repo to GitHub/GitLab/Bitbucket.
-2. Import the repo into [Vercel](https://vercel.com/new) and deploy.
-3. In Vercel, go to `Project Settings -> Domains` and add:
-   - `yourdomain.com`
-   - `www.yourdomain.com`
-4. In GoDaddy DNS, add/update:
-   - `A` record: host `@` -> `76.76.21.21`
-   - `CNAME` record: host `www` -> `cname.vercel-dns.com`
-5. Wait for DNS propagation, then verify domain in Vercel.
-6. SSL is issued automatically by Vercel once DNS is correct.
-
-## Notes
-
-- Keep all website media assets inside `public/images/` (not in `node_modules`).
-- If DNS is managed elsewhere, follow equivalent A/CNAME records from Vercel domain setup.
+The current runtime is for local v0 evaluation. It uses a demo organization
+and developer identity, synchronous runs, and a mock context plugin. Sign-in,
+customer connector installation, production tenant enforcement, and
+background execution are planned platform work.
