@@ -81,7 +81,7 @@ def main() -> int:
     agents = request(api_base, "/agents", token=token)
     if not isinstance(agents, list):
         raise RuntimeError("Agent list endpoint returned an invalid response")
-    agent = next((item for item in agents if item.get("name") == "Staging E2E smoke"), None)
+    agent = next((item for item in agents if item.get("name") == "Production E2E smoke"), None)
     if agent is None:
         agent = request(
             api_base,
@@ -89,7 +89,7 @@ def main() -> int:
             method="POST",
             token=token,
             payload={
-                "name": "Staging E2E smoke",
+                "name": "Production E2E smoke",
                 "description": "Automated deployment smoke agent",
                 "instructions": "Complete the requested task using the configured model.",
                 "model_profile_id": profile["id"],
@@ -98,7 +98,7 @@ def main() -> int:
             },
         )
     if not isinstance(agent, dict) or not agent.get("id"):
-        raise RuntimeError("Could not create or load the staging smoke agent")
+        raise RuntimeError("Could not create or load the deployment smoke agent")
 
     result = request(
         api_base,
@@ -107,7 +107,7 @@ def main() -> int:
         token=token,
         payload={
             "agent_id": agent["id"],
-            "task": "Confirm the end-to-end staging run completed successfully.",
+            "task": "Confirm the end-to-end production run completed successfully.",
         },
     )
     if not isinstance(result, dict):
@@ -116,7 +116,7 @@ def main() -> int:
     artifacts = result.get("artifacts", [])
     if run.get("status") != "succeeded" or not artifacts:
         raise RuntimeError(
-            f"Staging run did not succeed or create an artifact: {run.get('status')}"
+            f"Production run did not succeed or create an artifact: {run.get('status')}"
         )
 
     print("PASS API health, password login, agent creation, model completion, artifact")
@@ -128,5 +128,5 @@ if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except Exception as error:
-        print(f"FAIL staging smoke: {error}", file=sys.stderr)
+        print(f"FAIL deployment smoke: {error}", file=sys.stderr)
         raise SystemExit(1) from error

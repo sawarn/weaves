@@ -3,11 +3,11 @@ set -euo pipefail
 
 PROJECT_ID="${PROJECT_ID:-weaves-510819}"
 REGION="${REGION:-asia-south1}"
-AR_REPOSITORY="${AR_REPOSITORY:-weaves-staging}"
-SQL_INSTANCE="${SQL_INSTANCE:-weaves-staging-db}"
-API_SERVICE="weaves-api-staging"
-FRONTEND_SERVICE="weaves-frontend-staging"
-WORKER_POOL="weaves-worker-staging"
+AR_REPOSITORY="${AR_REPOSITORY:-weaves}"
+SQL_INSTANCE="${SQL_INSTANCE:-weaves-db}"
+API_SERVICE="weaves-api"
+FRONTEND_SERVICE="weaves-frontend"
+WORKER_POOL="weaves-worker"
 BACKEND_IMAGE="${BACKEND_IMAGE:-$(git -C backend rev-parse --short=12 HEAD)}"
 FRONTEND_DIR="${FRONTEND_DIR:-../weaves-app}"
 FRONTEND_IMAGE="${FRONTEND_IMAGE:-$(git -C "$FRONTEND_DIR" rev-parse --short=12 HEAD)}"
@@ -34,7 +34,7 @@ docker buildx build --platform=linux/amd64 --no-cache --provenance=false --push 
 "$GCLOUD" run deploy "$FRONTEND_SERVICE" \
   --project "$PROJECT_ID" --region "$REGION" --image "$frontend_ref" \
   --port 8080 --cpu 1 --memory 256Mi --max 3 --allow-unauthenticated \
-  --service-account "weaves-frontend-staging@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --service-account "weaves-frontend@${PROJECT_ID}.iam.gserviceaccount.com" \
   --set-env-vars "^|^WEAVES_API_BASE=/api/v0|WEAVES_PUBLIC_REGISTRATION=false"
 frontend_url="$("$GCLOUD" run services describe "$FRONTEND_SERVICE" \
   --project "$PROJECT_ID" --region "$REGION" --format='value(status.url)')"
@@ -43,9 +43,9 @@ frontend_url="$("$GCLOUD" run services describe "$FRONTEND_SERVICE" \
   --project "$PROJECT_ID" --region "$REGION" --image "$backend_ref" \
   --port 8000 --cpu 1 --memory 1Gi --max 3 --concurrency 20 --timeout 900 \
   --allow-unauthenticated \
-  --service-account "weaves-api-staging@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --service-account "weaves-api@${PROJECT_ID}.iam.gserviceaccount.com" \
   --add-cloudsql-instances "$connection_name" \
-  --set-secrets "DATABASE_URL=weaves-staging-database-url:1,WEAVES_SECRET_ENCRYPTION_KEY=weaves-staging-fernet-key:1,WEAVES_ORGANIZATION_ONBOARDING_TOKEN=weaves-staging-onboarding-token:1" \
+  --set-secrets "DATABASE_URL=weaves-database-url:1,WEAVES_SECRET_ENCRYPTION_KEY=weaves-fernet-key:1,WEAVES_ORGANIZATION_ONBOARDING_TOKEN=weaves-onboarding-token:1" \
   --set-env-vars "^|^WEAVES_ALLOW_ORGANIZATION_ONBOARDING=true|CORS_ORIGINS=${frontend_url}"
 api_url="$("$GCLOUD" run services describe "$API_SERVICE" \
   --project "$PROJECT_ID" --region "$REGION" --format='value(status.url)')"
@@ -55,35 +55,35 @@ api_url="$("$GCLOUD" run services describe "$API_SERVICE" \
 
 export WEAVES_API_BASE="${api_url}/api/v0"
 export WEAVES_OWNER_EMAIL="$("$GCLOUD" secrets versions access latest \
-  --secret=weaves-staging-e2e-owner-email --project="$PROJECT_ID")"
+  --secret=weaves-e2e-owner-email --project="$PROJECT_ID")"
 export WEAVES_OWNER_PASSWORD="$("$GCLOUD" secrets versions access latest \
-  --secret=weaves-staging-e2e-owner-password --project="$PROJECT_ID")"
+  --secret=weaves-e2e-owner-password --project="$PROJECT_ID")"
 export WEAVES_ONBOARDING_TOKEN="$("$GCLOUD" secrets versions access latest \
-  --secret=weaves-staging-onboarding-token --project="$PROJECT_ID")"
-python3 infra/gcp/staging/bootstrap_owner.py
+  --secret=weaves-onboarding-token --project="$PROJECT_ID")"
+python3 infra/gcp/bootstrap_owner.py
 unset WEAVES_OWNER_PASSWORD WEAVES_ONBOARDING_TOKEN
 
 "$GCLOUD" run services update "$API_SERVICE" \
   --project "$PROJECT_ID" --region "$REGION" \
   --remove-secrets WEAVES_ORGANIZATION_ONBOARDING_TOKEN \
   --update-env-vars "^|^WEAVES_ALLOW_ORGANIZATION_ONBOARDING=false|CORS_ORIGINS=${frontend_url}"
-"$GCLOUD" secrets remove-iam-policy-binding weaves-staging-onboarding-token \
+"$GCLOUD" secrets remove-iam-policy-binding weaves-onboarding-token \
   --project "$PROJECT_ID" \
-  --member="serviceAccount:weaves-api-staging@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --member="serviceAccount:weaves-api@${PROJECT_ID}.iam.gserviceaccount.com" \
   --role=roles/secretmanager.secretAccessor --quiet >/dev/null
 
 "$GCLOUD" run worker-pools deploy "$WORKER_POOL" \
   --project "$PROJECT_ID" --region "$REGION" --image "$backend_ref" \
   --instances 1 --cpu 1 --memory 512Mi \
-  --service-account "weaves-worker-staging@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --service-account "weaves-worker@${PROJECT_ID}.iam.gserviceaccount.com" \
   --command python --args=-m,weaves.product.worker \
   --add-cloudsql-instances "$connection_name" \
-  --set-secrets "DATABASE_URL=weaves-staging-database-url:1,WEAVES_SECRET_ENCRYPTION_KEY=weaves-staging-fernet-key:1"
+  --set-secrets "DATABASE_URL=weaves-database-url:1,WEAVES_SECRET_ENCRYPTION_KEY=weaves-fernet-key:1"
 
 export WEAVES_E2E_API_BASE="${api_url}/api/v0"
 export WEAVES_E2E_EMAIL="$WEAVES_OWNER_EMAIL"
 export WEAVES_E2E_PASSWORD="$("$GCLOUD" secrets versions access latest \
-  --secret=weaves-staging-e2e-owner-password --project="$PROJECT_ID")"
-python3 backend/scripts/e2e_staging_smoke.py
+  --secret=weaves-e2e-owner-password --project="$PROJECT_ID")"
+python3 backend/scripts/e2e_smoke.py
 
-printf 'Staging is deployed.\nFrontend: %s\nAPI: %s\n' "$frontend_url" "$api_url"
+printf 'Production is deployed.\nFrontend: %s\nAPI: %s\n' "$frontend_url" "$api_url"

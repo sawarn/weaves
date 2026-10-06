@@ -1,6 +1,6 @@
-# GCP staging
+# GCP deployment
 
-Staging runs in `asia-south1` with a Cloud Run API, a one-instance Cloud Run
+Production runs in `asia-south1` with a Cloud Run API, a one-instance Cloud Run
 worker pool, a public static frontend, and a small zonal Cloud SQL PostgreSQL
 instance. Runtime passwords, the database URL, encryption key, one-time
 onboarding token, and owner credentials are generated directly into Secret
@@ -14,7 +14,7 @@ Docker, Python 3, OpenSSL, and permission to configure project IAM and billing.
 From the backend repository root, run:
 
 ```sh
-bash infra/gcp/staging/bootstrap.sh
+bash infra/gcp/bootstrap.sh
 ```
 
 This creates the Cloud SQL instance, Artifact Registry repository, runtime and
@@ -27,7 +27,7 @@ For the first deploy, clone `sawarn/weaves-app` beside this repository as
 `../weaves-app`, then run:
 
 ```sh
-bash infra/gcp/staging/deploy-initial.sh
+bash infra/gcp/deploy-initial.sh
 ```
 
 The script builds and pushes both containers, starts the frontend and API,
@@ -48,5 +48,5 @@ browser test.
 
 The first deploy prints the Cloud Run `run.app` URLs for the UI and API. Custom
 domain routing is intentionally a separate step because it requires editing
-the domains' DNS records. The intended staging hosts are
+the domains' DNS records. The intended production hosts are
 `app.weave-studio.in` and `api.weave-studio.in`.

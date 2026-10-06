@@ -57,7 +57,7 @@ def main() -> int:
     created = request(
         f"{api_base}/onboarding/organizations",
         payload={
-            "name": "Weaves Staging",
+            "name": "Weaves Production",
             "owner_email": email,
             "owner_display_name": "Weaves Admin",
         },

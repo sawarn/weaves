@@ -3,14 +3,14 @@ set -euo pipefail
 
 PROJECT_ID="${PROJECT_ID:-weaves-510819}"
 REGION="${REGION:-asia-south1}"
-AR_REPOSITORY="${AR_REPOSITORY:-weaves-staging}"
-SQL_INSTANCE="${SQL_INSTANCE:-weaves-staging-db}"
+AR_REPOSITORY="${AR_REPOSITORY:-weaves}"
+SQL_INSTANCE="${SQL_INSTANCE:-weaves-db}"
 WIF_POOL="${WIF_POOL:-weaves-github-pool}"
 WIF_PROVIDER="${WIF_PROVIDER:-github-main}"
 DEPLOYER_SA="${DEPLOYER_SA:-weaves-github-deploy}"
-API_SA="${API_SA:-weaves-api-staging}"
-WORKER_SA="${WORKER_SA:-weaves-worker-staging}"
-FRONTEND_SA="${FRONTEND_SA:-weaves-frontend-staging}"
+API_SA="${API_SA:-weaves-api}"
+WORKER_SA="${WORKER_SA:-weaves-worker}"
+FRONTEND_SA="${FRONTEND_SA:-weaves-frontend}"
 GCLOUD="${GCLOUD:-$(command -v gcloud || true)}"
 if [[ -z "$GCLOUD" && -x /opt/homebrew/share/google-cloud-sdk/bin/gcloud ]]; then
   GCLOUD=/opt/homebrew/share/google-cloud-sdk/bin/gcloud
@@ -29,13 +29,13 @@ WORKER_EMAIL="${WORKER_SA}@${SA_DOMAIN}"
 FRONTEND_EMAIL="${FRONTEND_SA}@${SA_DOMAIN}"
 
 secrets=(
-  weaves-staging-db-root-password
-  weaves-staging-db-password
-  weaves-staging-database-url
-  weaves-staging-fernet-key
-  weaves-staging-onboarding-token
-  weaves-staging-e2e-owner-email
-  weaves-staging-e2e-owner-password
+  weaves-db-root-password
+  weaves-db-password
+  weaves-database-url
+  weaves-fernet-key
+  weaves-onboarding-token
+  weaves-e2e-owner-email
+  weaves-e2e-owner-password
 )
 
 ensure_secret() {
@@ -98,17 +98,17 @@ if ! "$GCLOUD" artifacts repositories describe "$AR_REPOSITORY" \
     --project="$PROJECT_ID" \
     --location="$REGION" \
     --repository-format=docker \
-    --description="Weaves staging container images" \
+    --description="Weaves production container images" \
     --quiet >/dev/null
 fi
 
-if ! "$GCLOUD" secrets describe weaves-staging-db-root-password \
+if ! "$GCLOUD" secrets describe weaves-db-root-password \
   --project="$PROJECT_ID" >/dev/null 2>&1; then
   root_password="$(openssl rand -hex 32)"
-  ensure_secret weaves-staging-db-root-password "$root_password"
+  ensure_secret weaves-db-root-password "$root_password"
 else
   root_password="$("$GCLOUD" secrets versions access latest \
-    --secret=weaves-staging-db-root-password --project="$PROJECT_ID")"
+    --secret=weaves-db-root-password --project="$PROJECT_ID")"
 fi
 
 if ! "$GCLOUD" sql instances describe "$SQL_INSTANCE" \
@@ -135,13 +135,13 @@ else
     --password="$root_password" --quiet >/dev/null
 fi
 
-if ! "$GCLOUD" secrets describe weaves-staging-db-password \
+if ! "$GCLOUD" secrets describe weaves-db-password \
   --project="$PROJECT_ID" >/dev/null 2>&1; then
   database_password="$(openssl rand -hex 32)"
-  ensure_secret weaves-staging-db-password "$database_password"
+  ensure_secret weaves-db-password "$database_password"
 else
   database_password="$("$GCLOUD" secrets versions access latest \
-    --secret=weaves-staging-db-password --project="$PROJECT_ID")"
+    --secret=weaves-db-password --project="$PROJECT_ID")"
 fi
 
 if ! "$GCLOUD" sql users list --project="$PROJECT_ID" --instance="$SQL_INSTANCE" \
@@ -158,33 +158,33 @@ fi
 
 connection_name="${PROJECT_ID}:${REGION}:${SQL_INSTANCE}"
 database_url="postgresql://weaves:${database_password}@/weaves?host=/cloudsql/${connection_name}"
-ensure_secret weaves-staging-database-url "$database_url"
+ensure_secret weaves-database-url "$database_url"
 
-if ! "$GCLOUD" secrets describe weaves-staging-fernet-key \
+if ! "$GCLOUD" secrets describe weaves-fernet-key \
   --project="$PROJECT_ID" >/dev/null 2>&1; then
   fernet_key="$(openssl rand -base64 32 | tr '+/' '-_')"
-  ensure_secret weaves-staging-fernet-key "$fernet_key"
+  ensure_secret weaves-fernet-key "$fernet_key"
 fi
-if ! "$GCLOUD" secrets describe weaves-staging-onboarding-token \
+if ! "$GCLOUD" secrets describe weaves-onboarding-token \
   --project="$PROJECT_ID" >/dev/null 2>&1; then
   onboarding_token="$(openssl rand -hex 48)"
-  ensure_secret weaves-staging-onboarding-token "$onboarding_token"
+  ensure_secret weaves-onboarding-token "$onboarding_token"
 fi
-if ! "$GCLOUD" secrets describe weaves-staging-e2e-owner-email \
+if ! "$GCLOUD" secrets describe weaves-e2e-owner-email \
   --project="$PROJECT_ID" >/dev/null 2>&1; then
   owner_email="$("$GCLOUD" config get-value account 2>/dev/null)"
-  ensure_secret weaves-staging-e2e-owner-email "$owner_email"
+  ensure_secret weaves-e2e-owner-email "$owner_email"
 fi
-if ! "$GCLOUD" secrets describe weaves-staging-e2e-owner-password \
+if ! "$GCLOUD" secrets describe weaves-e2e-owner-password \
   --project="$PROJECT_ID" >/dev/null 2>&1; then
   owner_password="$(openssl rand -hex 24)"
-  ensure_secret weaves-staging-e2e-owner-password "$owner_password"
+  ensure_secret weaves-e2e-owner-password "$owner_password"
 fi
 
-ensure_service_account "$DEPLOYER_SA" "Weaves staging GitHub deployer"
-ensure_service_account "$API_SA" "Weaves staging API runtime"
-ensure_service_account "$WORKER_SA" "Weaves staging worker runtime"
-ensure_service_account "$FRONTEND_SA" "Weaves staging frontend runtime"
+ensure_service_account "$DEPLOYER_SA" "Weaves production GitHub deployer"
+ensure_service_account "$API_SA" "Weaves production API runtime"
+ensure_service_account "$WORKER_SA" "Weaves production worker runtime"
+ensure_service_account "$FRONTEND_SA" "Weaves production frontend runtime"
 
 grant_project_role "serviceAccount:${DEPLOYER_EMAIL}" roles/run.admin
 grant_project_role "serviceAccount:${DEPLOYER_EMAIL}" roles/serviceusage.serviceUsageConsumer
@@ -205,15 +205,15 @@ for runtime_email in "$API_EMAIL" "$WORKER_EMAIL" "$FRONTEND_EMAIL"; do
 done
 
 for secret_name in \
-  weaves-staging-database-url \
-  weaves-staging-fernet-key; do
+  weaves-database-url \
+  weaves-fernet-key; do
   grant_secret_access "$secret_name" "serviceAccount:${API_EMAIL}"
   grant_secret_access "$secret_name" "serviceAccount:${WORKER_EMAIL}"
 done
-grant_secret_access weaves-staging-onboarding-token "serviceAccount:${API_EMAIL}"
+grant_secret_access weaves-onboarding-token "serviceAccount:${API_EMAIL}"
 for secret_name in \
-  weaves-staging-e2e-owner-email \
-  weaves-staging-e2e-owner-password; do
+  weaves-e2e-owner-email \
+  weaves-e2e-owner-password; do
   grant_secret_access "$secret_name" "serviceAccount:${DEPLOYER_EMAIL}"
 done
 
@@ -221,7 +221,7 @@ if ! "$GCLOUD" iam workload-identity-pools describe "$WIF_POOL" \
   --project="$PROJECT_ID" --location=global >/dev/null 2>&1; then
   "$GCLOUD" iam workload-identity-pools create "$WIF_POOL" \
     --project="$PROJECT_ID" --location=global \
-    --display-name="Weaves GitHub Actions staging" --quiet >/dev/null
+    --display-name="Weaves GitHub Actions production" --quiet >/dev/null
 fi
 if ! "$GCLOUD" iam workload-identity-pools providers describe "$WIF_PROVIDER" \
   --project="$PROJECT_ID" --location=global --workload-identity-pool="$WIF_POOL" \
@@ -256,6 +256,6 @@ for repository in "$BACKEND_REPO" "$FRONTEND_REPO"; do
   gh variable set GCP_DEPLOY_SERVICE_ACCOUNT --repo "$repository" --body "$DEPLOYER_EMAIL"
 done
 
-printf 'Staging project resources and GitHub OIDC are prepared.\n'
+printf 'Production project resources and GitHub OIDC are prepared.\n'
 printf 'Region: %s\nArtifact Registry: %s-docker.pkg.dev/%s/%s\n' \
   "$REGION" "$REGION" "$PROJECT_ID" "$AR_REPOSITORY"

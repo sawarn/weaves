@@ -1,4 +1,4 @@
-name: Backend CI and staging deploy
+name: Backend CI and deployment
 
 on:
   pull_request:
@@ -24,9 +24,9 @@ env:
   PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
   REGION: ${{ vars.GCP_REGION }}
   REPOSITORY: ${{ vars.GCP_ARTIFACT_REPOSITORY }}
-  API_SERVICE: weaves-api-staging
-  WORKER_POOL: weaves-worker-staging
-  CLOUDSQL_INSTANCE: weaves-staging-db
+  API_SERVICE: weaves-api
+  WORKER_POOL: weaves-worker
+  CLOUDSQL_INSTANCE: weaves-db
 
 jobs:
   verify:
@@ -104,12 +104,12 @@ jobs:
             --concurrency 20 \
             --timeout 900 \
             --allow-unauthenticated \
-            --service-account "weaves-api-staging@${PROJECT_ID}.iam.gserviceaccount.com" \
+            --service-account "weaves-api@${PROJECT_ID}.iam.gserviceaccount.com" \
             --add-cloudsql-instances "${PROJECT_ID}:${REGION}:${CLOUDSQL_INSTANCE}" \
-            --set-secrets "DATABASE_URL=weaves-staging-database-url:1,WEAVES_SECRET_ENCRYPTION_KEY=weaves-staging-fernet-key:1" \
+            --set-secrets "DATABASE_URL=weaves-database-url:1,WEAVES_SECRET_ENCRYPTION_KEY=weaves-fernet-key:1" \
             --update-env-vars "^|^WEAVES_ALLOW_ORGANIZATION_ONBOARDING=false|CORS_ORIGINS=https://app.weave-studio.in"
 
-          FRONTEND_URL="$(gcloud run services describe weaves-frontend-staging \
+          FRONTEND_URL="$(gcloud run services describe weaves-frontend \
             --project "$PROJECT_ID" --region "$REGION" \
             --format='value(status.url)' 2>/dev/null || true)"
           if [ -n "$FRONTEND_URL" ]; then
@@ -126,25 +126,25 @@ jobs:
             --instances 1 \
             --cpu 1 \
             --memory 512Mi \
-            --service-account "weaves-worker-staging@${PROJECT_ID}.iam.gserviceaccount.com" \
+            --service-account "weaves-worker@${PROJECT_ID}.iam.gserviceaccount.com" \
             --command python \
             --args=-m,weaves.product.worker \
             --add-cloudsql-instances "${PROJECT_ID}:${REGION}:${CLOUDSQL_INSTANCE}" \
-            --set-secrets "DATABASE_URL=weaves-staging-database-url:1,WEAVES_SECRET_ENCRYPTION_KEY=weaves-staging-fernet-key:1"
+            --set-secrets "DATABASE_URL=weaves-database-url:1,WEAVES_SECRET_ENCRYPTION_KEY=weaves-fernet-key:1"
 
           API_URL="$(gcloud run services describe "$API_SERVICE" \
             --project "$PROJECT_ID" --region "$REGION" \
             --format='value(status.url)')"
           echo "API deployed at $API_URL"
-      - name: Load staging smoke credentials from Secret Manager
+      - name: Load deployment smoke credentials from Secret Manager
         run: |
           set -euo pipefail
-          email="$(gcloud secrets versions access latest --secret=weaves-staging-e2e-owner-email --project="$PROJECT_ID")"
-          password="$(gcloud secrets versions access latest --secret=weaves-staging-e2e-owner-password --project="$PROJECT_ID")"
+          email="$(gcloud secrets versions access latest --secret=weaves-e2e-owner-email --project="$PROJECT_ID")"
+          password="$(gcloud secrets versions access latest --secret=weaves-e2e-owner-password --project="$PROJECT_ID")"
           echo "::add-mask::$email"
           echo "::add-mask::$password"
           echo "WEAVES_E2E_EMAIL=$email" >> "$GITHUB_ENV"
           echo "WEAVES_E2E_PASSWORD=$password" >> "$GITHUB_ENV"
           echo "WEAVES_E2E_API_BASE=$(gcloud run services describe "$API_SERVICE" --project "$PROJECT_ID" --region "$REGION" --format='value(status.url)')/api/v0" >> "$GITHUB_ENV"
       - name: Run deployed API end-to-end smoke
-        run: python backend/scripts/e2e_staging_smoke.py
+        run: python backend/scripts/e2e_smoke.py
