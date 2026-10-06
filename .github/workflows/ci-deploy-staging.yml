@@ -139,8 +139,8 @@ jobs:
       - name: Load staging smoke credentials from Secret Manager
         run: |
           set -euo pipefail
-          email="$(gcloud secrets versions access 1 --secret=weaves-staging-e2e-owner-email --project="$PROJECT_ID")"
-          password="$(gcloud secrets versions access 1 --secret=weaves-staging-e2e-owner-password --project="$PROJECT_ID")"
+          email="$(gcloud secrets versions access latest --secret=weaves-staging-e2e-owner-email --project="$PROJECT_ID")"
+          password="$(gcloud secrets versions access latest --secret=weaves-staging-e2e-owner-password --project="$PROJECT_ID")"
           echo "::add-mask::$email"
           echo "::add-mask::$password"
           echo "WEAVES_E2E_EMAIL=$email" >> "$GITHUB_ENV"
