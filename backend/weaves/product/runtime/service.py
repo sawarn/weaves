@@ -1876,15 +1876,39 @@ class LocalPlatformRuntime(EvaluationRuntimeMixin):
         )
         profiles: list[ModelProfile] = []
         new_profiles: list[ModelProfile] = []
+        updated_profiles: list[ModelProfile] = []
+        existing_profiles = {
+            profile.model: profile
+            for profile in self.model_profiles.list_scoped(effective_org_id())
+            if profile.provider_id == provider.id
+        }
+        for existing in existing_profiles.values():
+            if (
+                existing.model not in model_ids
+                and existing.status is ModelProfileStatus.ACTIVE
+            ):
+                updated_profiles.append(
+                    existing.model_copy(
+                        update={
+                            "status": ModelProfileStatus.DISABLED,
+                            "updated_at": timestamp,
+                        }
+                    )
+                )
         for model_id in model_ids:
             profile_id = f"model-{hashlib.sha256((provider.id + model_id).encode('utf-8')).hexdigest()[:24]}"
-            try:
-                profiles.append(
-                    self.model_profiles.get_scoped(profile_id, effective_org_id())
-                )
+            existing = existing_profiles.get(model_id)
+            if existing is not None:
+                if existing.status is ModelProfileStatus.DISABLED:
+                    existing = existing.model_copy(
+                        update={
+                            "status": ModelProfileStatus.ACTIVE,
+                            "updated_at": timestamp,
+                        }
+                    )
+                    updated_profiles.append(existing)
+                profiles.append(existing)
                 continue
-            except KeyError:
-                pass
             profile = ModelProfile(
                 id=profile_id,
                 org_id=effective_org_id(),
@@ -1900,6 +1924,8 @@ class LocalPlatformRuntime(EvaluationRuntimeMixin):
         actor = effective_principal_id("local-developer")
         with self._unit_of_work():
             self.providers.put(updated_provider)
+            for profile in updated_profiles:
+                self.model_profiles.put(profile)
             for profile in new_profiles:
                 self.model_profiles.create(profile)
             self.audit_events.create(
