@@ -791,6 +791,40 @@ class LocalPlatformRuntime(EvaluationRuntimeMixin):
                 # A concurrent API replica may have inserted the same seed.
                 return repository.get(record_id)
 
+    def _repair_model_profile_allowlists(self) -> None:
+        """Restore provider allowlists for every persisted profile reference.
+
+        Older catalog refreshes replaced the provider model list outright,
+        leaving existing profiles (and agent versions that reference them) in
+        an invalid state. Run this small idempotent repair during bootstrap so
+        persisted workspaces recover without requiring manual database edits.
+        """
+        profiles_by_provider: dict[str, set[str]] = {}
+        for profile in self.model_profiles.list():
+            profiles_by_provider.setdefault(profile.provider_id, set()).add(
+                profile.model
+            )
+
+        repairs: list[ModelProviderContract] = []
+        for provider in self.providers.list():
+            profile_models = profiles_by_provider.get(provider.id, set())
+            missing_models = sorted(profile_models.difference(provider.allowed_models))
+            if not missing_models:
+                continue
+            repaired = provider.model_copy(
+                update={
+                    "allowed_models": [*provider.allowed_models, *missing_models]
+                }
+            )
+            repairs.append(
+                ModelProviderContract.model_validate(repaired.model_dump())
+            )
+
+        if repairs:
+            with self._unit_of_work():
+                for provider in repairs:
+                    self.providers.put(provider)
+
     def bootstrap(self) -> None:
         """Create a deterministic local org, workspace, model, plugin, and agent."""
         if self._bootstrapped:
@@ -1317,6 +1351,7 @@ class LocalPlatformRuntime(EvaluationRuntimeMixin):
                 updated_at=now,
             ),
         )
+        self._repair_model_profile_allowlists()
         self.recover_stale_runs()
         self.recover_stale_execution_jobs()
         self.recover_stale_action_invocations()
