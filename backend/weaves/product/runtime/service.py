@@ -1897,19 +1897,19 @@ class LocalPlatformRuntime(EvaluationRuntimeMixin):
                 )
         for model_id in model_ids:
             profile_id = f"model-{hashlib.sha256((provider.id + model_id).encode('utf-8')).hexdigest()[:24]}"
-            existing = existing_profiles.get(model_id)
-            if existing is not None:
-                if existing.status is ModelProfileStatus.DISABLED:
-                    existing = existing.model_copy(
+            found_profile = existing_profiles.get(model_id)
+            if found_profile is not None:
+                if found_profile.status is ModelProfileStatus.DISABLED:
+                    found_profile = found_profile.model_copy(
                         update={
                             "status": ModelProfileStatus.ACTIVE,
                             "updated_at": timestamp,
                         }
                     )
-                    updated_profiles.append(existing)
-                profiles.append(existing)
+                    updated_profiles.append(found_profile)
+                profiles.append(found_profile)
                 continue
-            profile = ModelProfile(
+            new_profile = ModelProfile(
                 id=profile_id,
                 org_id=effective_org_id(),
                 provider_id=provider.id,
@@ -1919,8 +1919,8 @@ class LocalPlatformRuntime(EvaluationRuntimeMixin):
                 created_at=timestamp,
                 updated_at=timestamp,
             )
-            profiles.append(profile)
-            new_profiles.append(profile)
+            profiles.append(new_profile)
+            new_profiles.append(new_profile)
         actor = effective_principal_id("local-developer")
         with self._unit_of_work():
             self.providers.put(updated_provider)

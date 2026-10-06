@@ -168,7 +168,12 @@ def create_app(runtime: Optional[LocalPlatformRuntime] = None) -> FastAPI:
         allow_origins=allowed_origins,
         allow_credentials=False,
         allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["Content-Type", "Authorization", "X-Workspace-ID"],
+        allow_headers=[
+            "Content-Type",
+            "Authorization",
+            "X-Workspace-ID",
+            "X-Weaves-Onboarding-Token",
+        ],
     )
     app.state.platform_runtime = platform
 

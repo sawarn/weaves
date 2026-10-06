@@ -72,6 +72,45 @@ def test_organization_onboarding_is_rate_limited_per_client_address():
     assert limited.json()["detail"] == "organization onboarding is temporarily limited"
 
 
+def test_organization_onboarding_can_be_disabled_for_deployed_workspaces(monkeypatch):
+    monkeypatch.setenv("WEAVES_ALLOW_ORGANIZATION_ONBOARDING", "false")
+    client = TestClient(create_app(LocalPlatformRuntime()))
+
+    with client:
+        response = client.post(
+            "/api/v0/onboarding/organizations",
+            json={
+                "name": "Closed signup org",
+                "owner_email": "owner@example.test",
+                "owner_display_name": "Owner",
+            },
+        )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Organization onboarding is disabled"
+
+
+def test_organization_onboarding_token_gates_public_provisioning(monkeypatch):
+    monkeypatch.setenv("WEAVES_ORGANIZATION_ONBOARDING_TOKEN", "expected-secret")
+    client = TestClient(create_app(LocalPlatformRuntime()))
+    payload = {
+        "name": "Token gated org",
+        "owner_email": "owner@example.test",
+        "owner_display_name": "Owner",
+    }
+
+    with client:
+        denied = client.post("/api/v0/onboarding/organizations", json=payload)
+        created = client.post(
+            "/api/v0/onboarding/organizations",
+            json=payload,
+            headers={"X-Weaves-Onboarding-Token": "expected-secret"},
+        )
+
+    assert denied.status_code == 404
+    assert created.status_code == 201, created.text
+
+
 def test_engineering_agent_template_creates_a_scoped_runnable_agent():
     client = TestClient(create_app(LocalPlatformRuntime()))
     with client:

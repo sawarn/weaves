@@ -1,5 +1,7 @@
 """Organization identity, access, and credential API routes."""
 
+import hmac
+import os
 from typing import Any, Callable, Optional
 
 from fastapi import FastAPI, Header, HTTPException, Query, Request, Response
@@ -360,7 +362,27 @@ def register_identity_routes(
     def create_organization(
         request: Request,
         onboarding_request: OrganizationOnboardingRequest,
+        onboarding_token: Optional[str] = Header(
+            default=None, alias="X-Weaves-Onboarding-Token"
+        ),
     ) -> dict[str, Any]:
+        if os.environ.get("WEAVES_ALLOW_ORGANIZATION_ONBOARDING", "true").lower() not in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }:
+            raise HTTPException(
+                status_code=404,
+                detail="Organization onboarding is disabled",
+            )
+        expected_onboarding_token = os.environ.get(
+            "WEAVES_ORGANIZATION_ONBOARDING_TOKEN", ""
+        ).strip()
+        if expected_onboarding_token and not hmac.compare_digest(
+            onboarding_token or "", expected_onboarding_token
+        ):
+            raise HTTPException(status_code=404, detail="Organization not found")
         try:
             platform.check_onboarding_rate_limit(
                 request.client.host if request.client else None
