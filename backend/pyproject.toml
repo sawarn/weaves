@@ -13,7 +13,7 @@ select = ["E4", "E7", "E9", "F", "I"]
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]
-python_version = "3.9"
+python_version = "3.12"
 strict = true
 ignore_missing_imports = true
 files = ["weaves/product"]
