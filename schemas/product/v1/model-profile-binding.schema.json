@@ -59,6 +59,24 @@
           "title": "Id",
           "type": "string"
         },
+        "input_cost_per_million_tokens_usd": {
+          "anyOf": [
+            {
+              "maximum": 100000.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,9}|(?=[\\d.]{1,19}0*$)\\d{0,9}\\.\\d{0,9}0*$)",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Cost Per Million Tokens Usd"
+        },
         "max_output_tokens": {
           "default": 2048,
           "maximum": 32768,
@@ -78,6 +96,24 @@
           "minLength": 1,
           "title": "Org Id",
           "type": "string"
+        },
+        "output_cost_per_million_tokens_usd": {
+          "anyOf": [
+            {
+              "maximum": 100000.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,9}|(?=[\\d.]{1,19}0*$)\\d{0,9}\\.\\d{0,9}0*$)",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Cost Per Million Tokens Usd"
         },
         "provider_id": {
           "maxLength": 128,

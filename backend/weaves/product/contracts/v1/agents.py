@@ -20,7 +20,11 @@ from weaves.product.contracts.v1.base import (
     ProductContract,
     StrEnum,
 )
-from weaves.product.contracts.v1.json_data import freeze_json_value, thaw_json_value
+from weaves.product.contracts.v1.json_data import (
+    thaw_json_value,
+    validate_json_schema,
+)
+from weaves.product.contracts.v1.memory import MemoryPolicy
 
 InstructionText = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=12000)
@@ -77,6 +81,7 @@ class AgentVersion(ImmutableWorkspaceVersionContract):
     )
     approval_policy_id: Optional[OpaqueId] = None
     budget_policy_id: Optional[OpaqueId] = None
+    memory_policy: MemoryPolicy = Field(default_factory=MemoryPolicy)
     budget: AgentBudget = Field(default_factory=AgentBudget)
     output_schema: Optional[dict[str, JsonValue]] = None
 
@@ -87,7 +92,7 @@ class AgentVersion(ImmutableWorkspaceVersionContract):
     ) -> Any:
         if value is None:
             return value
-        return freeze_json_value(value, "output_schema")
+        return validate_json_schema(value, "output_schema")
 
     @field_serializer("output_schema")
     def serialize_output_schema(self: "AgentVersion", value: Any) -> Any:

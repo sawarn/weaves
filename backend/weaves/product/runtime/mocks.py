@@ -2,7 +2,7 @@
 
 from typing import Any, Protocol
 
-from weaves.product.contracts.v1 import ModelProfileBinding
+from weaves.product.contracts.v1 import ModelProfileBinding, PluginInstallation
 from weaves.product.contracts.v1.model_execution import (
     ModelRequest,
     ModelResponse,
@@ -61,6 +61,66 @@ class MockKnowledgePlugin:
         if not isinstance(query, str):
             raise ValueError("query must be text")
         return {"documents": list(self.search(query))}
+
+
+class RepositoryKnowledgePlugin:
+    """Read workspace context from the product document repository."""
+
+    def __init__(self, documents: Any) -> None:
+        self._documents = documents
+
+    def search(
+        self,
+        query: str,
+        *,
+        org_id: str,
+        workspace_id: str,
+    ) -> tuple[dict[str, Any], ...]:
+        terms = {term.lower() for term in query.split() if len(term) > 2}
+        documents = self._documents.list_scoped(org_id, workspace_id)
+        ranked = sorted(
+            documents,
+            key=lambda item: (
+                -sum(
+                    1
+                    for term in terms
+                    if term in (item.title + " " + item.text).lower()
+                )
+            ),
+        )
+        return tuple(
+            {
+                "source_id": item.source_id,
+                "title": item.title,
+                "text": item.text,
+            }
+            for item in ranked[:3]
+        )
+
+    def invoke(self, capability_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+        raise ValueError("local knowledge search requires an installation scope")
+
+    def invoke_for_installation(
+        self,
+        capability_id: str,
+        payload: dict[str, Any],
+        installation: PluginInstallation,
+    ) -> dict[str, Any]:
+        """Search only the organization and workspace owning the installation."""
+        if capability_id != "knowledge.search":
+            raise ValueError("unsupported local knowledge capability")
+        query = payload.get("query")
+        if not isinstance(query, str):
+            raise ValueError("query must be text")
+        return {
+            "documents": list(
+                self.search(
+                    query,
+                    org_id=installation.org_id,
+                    workspace_id=installation.workspace_id,
+                )
+            )
+        }
 
 
 class DeterministicMockModel(ModelAdapter):

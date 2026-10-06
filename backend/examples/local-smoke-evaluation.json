@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "suite_id": "local-assistant-smoke",
+  "agent_id": "local-assistant",
+  "cases": [
+    {
+      "case_id": "echo-marker",
+      "task": "Include the exact marker LOCAL-SMOKE-OK in your response.",
+      "must_contain": ["LOCAL-SMOKE-OK"],
+      "must_not_contain": ["LOCAL-SMOKE-FAIL"],
+      "required_sources": [],
+      "minimum_tool_calls": 0
+    }
+  ]
+}

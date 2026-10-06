@@ -7,9 +7,27 @@ from weaves.product.contracts.v1.agents import (
     AgentStatus,
     AgentVersion,
 )
+from weaves.product.contracts.v1.auth import (
+    UserPasswordCredential,
+    UserSession,
+    UserSessionStatus,
+)
+from weaves.product.contracts.v1.credentials import ApiCredential, ApiCredentialStatus
+from weaves.product.contracts.v1.evaluations import (
+    EvaluationCase,
+    EvaluationCaseResult,
+    EvaluationCheck,
+    EvaluationExecution,
+    EvaluationExecutionStatus,
+    EvaluationReport,
+    EvaluationReportRecord,
+    EvaluationSuite,
+    EvaluationSuiteRecord,
+)
 from weaves.product.contracts.v1.executions import (
     AgentRun,
     AgentRunBundle,
+    ApprovalPolicy,
     ApprovalRequest,
     ApprovalStatus,
     Artifact,
@@ -19,6 +37,8 @@ from weaves.product.contracts.v1.executions import (
     AuditEvent,
     AuditTargetScope,
     ErrorSummary,
+    ExecutionJob,
+    ExecutionJobStatus,
     InvocationStatus,
     RetentionClass,
     RunStatus,
@@ -39,6 +59,17 @@ from weaves.product.contracts.v1.identity import (
     UserStatus,
     Workspace,
     WorkspaceStatus,
+)
+from weaves.product.contracts.v1.invitations import (
+    UserInvitation,
+    UserInvitationStatus,
+)
+from weaves.product.contracts.v1.knowledge import KnowledgeDocument
+from weaves.product.contracts.v1.memory import (
+    MemoryItem,
+    MemoryPolicy,
+    MemoryRetentionClass,
+    MemoryScope,
 )
 from weaves.product.contracts.v1.model_execution import (
     ModelMessage,
@@ -65,15 +96,35 @@ from weaves.product.contracts.v1.plugins import (
     PluginInstallationStatus,
     RiskLevel,
 )
+from weaves.product.contracts.v1.schedules import (
+    WorkflowSchedule,
+    WorkflowScheduleStatus,
+)
+from weaves.product.contracts.v1.threads import (
+    ConversationThread,
+    ConversationThreadStatus,
+)
+from weaves.product.contracts.v1.triggers import (
+    WorkflowTrigger,
+    WorkflowTriggerStatus,
+)
 from weaves.product.contracts.v1.workflows import (
     WorkflowBundle,
+    WorkflowConditionOperator,
     WorkflowDefinition,
+    WorkflowJoinPolicy,
+    WorkflowParallelGroup,
     WorkflowStatus,
+    WorkflowStepCondition,
+    WorkflowStepDependency,
     WorkflowVersion,
 )
 
 __all__ = [
+    "ApiCredential",
+    "ApiCredentialStatus",
     "ApprovalRequest",
+    "ApprovalPolicy",
     "ApprovalStatus",
     "Artifact",
     "ArtifactProvenance",
@@ -82,6 +133,17 @@ __all__ = [
     "AuditEvent",
     "AuditTargetScope",
     "ErrorSummary",
+    "ExecutionJob",
+    "ExecutionJobStatus",
+    "EvaluationCase",
+    "EvaluationCaseResult",
+    "EvaluationCheck",
+    "EvaluationExecution",
+    "EvaluationExecutionStatus",
+    "EvaluationReport",
+    "EvaluationReportRecord",
+    "EvaluationSuite",
+    "EvaluationSuiteRecord",
     "Organization",
     "OrganizationStatus",
     "AgentBudget",
@@ -93,7 +155,13 @@ __all__ = [
     "AgentVersion",
     "CapabilityKind",
     "CapabilitySpec",
+    "ConversationThread",
+    "ConversationThreadStatus",
     "ModelProfile",
+    "MemoryItem",
+    "MemoryPolicy",
+    "MemoryRetentionClass",
+    "MemoryScope",
     "ModelProfileBinding",
     "ModelMessage",
     "ModelMessageRole",
@@ -105,6 +173,7 @@ __all__ = [
     "ModelResponse",
     "ModelUsage",
     "InvocationStatus",
+    "KnowledgeDocument",
     "Permission",
     "PluginDescriptor",
     "PluginDescriptorStatus",
@@ -121,13 +190,27 @@ __all__ = [
     "RunStatus",
     "ToolInvocation",
     "User",
+    "UserInvitation",
+    "UserInvitationStatus",
+    "UserPasswordCredential",
+    "UserSession",
+    "UserSessionStatus",
     "UserStatus",
     "Workspace",
     "WorkspaceStatus",
     "WorkflowBundle",
+    "WorkflowConditionOperator",
     "WorkflowDefinition",
+    "WorkflowJoinPolicy",
+    "WorkflowParallelGroup",
     "WorkflowRun",
     "WorkflowRunBundle",
+    "WorkflowTrigger",
+    "WorkflowTriggerStatus",
     "WorkflowStatus",
+    "WorkflowStepCondition",
+    "WorkflowStepDependency",
+    "WorkflowSchedule",
+    "WorkflowScheduleStatus",
     "WorkflowVersion",
 ]

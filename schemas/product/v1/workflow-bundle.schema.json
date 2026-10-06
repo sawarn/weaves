@@ -1,6 +1,15 @@
 {
   "$defs": {
     "JsonValue": {},
+    "WorkflowConditionOperator": {
+      "enum": [
+        "exists",
+        "equals",
+        "not_equals"
+      ],
+      "title": "WorkflowConditionOperator",
+      "type": "string"
+    },
     "WorkflowDefinition": {
       "additionalProperties": false,
       "properties": {
@@ -80,6 +89,42 @@
       "title": "WorkflowDefinition",
       "type": "object"
     },
+    "WorkflowJoinPolicy": {
+      "enum": [
+        "all",
+        "any"
+      ],
+      "title": "WorkflowJoinPolicy",
+      "type": "string"
+    },
+    "WorkflowParallelGroup": {
+      "additionalProperties": false,
+      "description": "A bounded set of adjacent workflow agents that can execute together.",
+      "properties": {
+        "agent_ids": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 5,
+          "minItems": 2,
+          "title": "Agent Ids",
+          "type": "array"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "agent_ids"
+      ],
+      "title": "WorkflowParallelGroup",
+      "type": "object"
+    },
     "WorkflowStatus": {
       "enum": [
         "draft",
@@ -88,6 +133,89 @@
       ],
       "title": "WorkflowStatus",
       "type": "string"
+    },
+    "WorkflowStepCondition": {
+      "additionalProperties": false,
+      "description": "Allow a workflow step only when a prior structured result matches.",
+      "properties": {
+        "expected_value": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "json_pointer": {
+          "maxLength": 512,
+          "title": "Json Pointer",
+          "type": "string"
+        },
+        "operator": {
+          "$ref": "#/$defs/WorkflowConditionOperator"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "source_agent_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Source Agent Id",
+          "type": "string"
+        },
+        "target_agent_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Target Agent Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_agent_id",
+        "target_agent_id",
+        "json_pointer",
+        "operator",
+        "expected_value"
+      ],
+      "title": "WorkflowStepCondition",
+      "type": "object"
+    },
+    "WorkflowStepDependency": {
+      "additionalProperties": false,
+      "description": "Predecessor steps that must finish before a workflow step is eligible.",
+      "properties": {
+        "depends_on_agent_ids": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 9,
+          "minItems": 1,
+          "title": "Depends On Agent Ids",
+          "type": "array"
+        },
+        "join_policy": {
+          "$ref": "#/$defs/WorkflowJoinPolicy",
+          "default": "all"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "target_agent_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Target Agent Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "target_agent_id",
+        "depends_on_agent_ids"
+      ],
+      "title": "WorkflowStepDependency",
+      "type": "object"
     },
     "WorkflowVersion": {
       "additionalProperties": false,
@@ -142,6 +270,14 @@
           "title": "Output Schema",
           "type": "object"
         },
+        "parallel_groups": {
+          "items": {
+            "$ref": "#/$defs/WorkflowParallelGroup"
+          },
+          "maxItems": 5,
+          "title": "Parallel Groups",
+          "type": "array"
+        },
         "required_capability_ids": {
           "items": {
             "maxLength": 128,
@@ -158,6 +294,22 @@
           "default": 1,
           "title": "Schema Version",
           "type": "integer"
+        },
+        "step_conditions": {
+          "items": {
+            "$ref": "#/$defs/WorkflowStepCondition"
+          },
+          "maxItems": 10,
+          "title": "Step Conditions",
+          "type": "array"
+        },
+        "step_dependencies": {
+          "items": {
+            "$ref": "#/$defs/WorkflowStepDependency"
+          },
+          "maxItems": 9,
+          "title": "Step Dependencies",
+          "type": "array"
         },
         "version": {
           "minimum": 1,

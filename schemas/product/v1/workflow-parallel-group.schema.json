@@ -1,0 +1,28 @@
+{
+  "additionalProperties": false,
+  "description": "A bounded set of adjacent workflow agents that can execute together.",
+  "properties": {
+    "agent_ids": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 5,
+      "minItems": 2,
+      "title": "Agent Ids",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "agent_ids"
+  ],
+  "title": "WorkflowParallelGroup",
+  "type": "object"
+}

@@ -14,6 +14,8 @@ from weaves.product.contracts.v1 import (
     AuditEvent,
     AuditTargetScope,
     ErrorSummary,
+    ExecutionJob,
+    ExecutionJobStatus,
     InvocationStatus,
     RetentionClass,
     RiskLevel,
@@ -84,6 +86,67 @@ def test_failed_run_requires_bounded_sanitized_error():
         ).error
         is not None
     )
+
+
+def test_execution_job_state_requires_claim_and_terminal_fields():
+    base = {
+        "job_id": "job-1",
+        "org_id": "org-1",
+        "workspace_id": "workspace-1",
+        "requested_by_principal_id": "principal-1",
+        "task": "Summarize the release checklist",
+        "agent_id": "agent-1",
+        "status": ExecutionJobStatus.QUEUED,
+        "created_at": NOW,
+        "updated_at": NOW,
+    }
+    queued = ExecutionJob(**base)
+    assert queued.attempts == 0
+    workflow_queued = ExecutionJob(
+        **(base | {"agent_id": None, "workflow_id": "workflow-1"})
+    )
+    assert workflow_queued.workflow_id == "workflow-1"
+    pinned_workflow_queued = ExecutionJob(
+        **(
+            base
+            | {
+                "agent_id": None,
+                "workflow_id": "workflow-1",
+                "workflow_version_id": "workflow-version-3",
+            }
+        )
+    )
+    assert pinned_workflow_queued.workflow_version_id == "workflow-version-3"
+    with pytest.raises(ValidationError, match="requires a workflow_id"):
+        ExecutionJob(**(base | {"workflow_version_id": "workflow-version-3"}))
+    with pytest.raises(ValidationError, match="both an agent and workflow"):
+        ExecutionJob(**(base | {"workflow_id": "workflow-1"}))
+    with pytest.raises(ValidationError, match="active jobs require"):
+        ExecutionJob(**(base | {"status": ExecutionJobStatus.RUNNING, "attempts": 1}))
+    running = ExecutionJob(
+        **(
+            base
+            | {
+                "status": ExecutionJobStatus.RUNNING,
+                "attempts": 1,
+                "worker_id": "worker-a",
+                "started_at": NOW,
+            }
+        )
+    )
+    assert running.worker_id == "worker-a"
+    with pytest.raises(ValidationError, match="failed jobs require"):
+        ExecutionJob(
+            **(
+                base
+                | {
+                    "status": ExecutionJobStatus.FAILED,
+                    "attempts": 1,
+                    "started_at": NOW,
+                    "finished_at": NOW,
+                }
+            )
+        )
 
 
 def test_agent_run_captures_resolved_provider_and_model_ids():

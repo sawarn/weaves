@@ -797,6 +797,14 @@ Do not in this phase:
 - Add automatic model routing.
 - Add billing.
 
+Backend v0 records provider-reported token usage and calculates an estimated
+USD cost when both per-million input and output rates are configured on the
+model profile. Rates are operator supplied because provider pricing changes;
+the estimate is not an invoice. Per-agent and per-model-profile cost caps are
+enforced against provider-reported usage after completion. If usage exceeds a
+cap, the run fails and its measured usage is retained. This check cannot prevent
+the completed provider request from incurring charges.
+
 ## Phase 4: Plugin Gateway
 
 Goal: make organization data access plug-and-play and governed.
@@ -842,6 +850,41 @@ Success criteria:
 - A dashboard could be built against these APIs.
 - Product objects can be configured without changing YAML for every detail.
 - Existing operator config remains supported as bootstrap/default config.
+
+The local v0 API supports operator-configured bearer tokens bound to active
+principals and admin-managed service-account credentials with persisted token
+digests, expiry, and revocation. Human users can enroll a password, sign in to
+a 12-hour bearer session, and revoke sessions. Workspace admins can issue
+seven-day, one-time invitations; acceptance activates the account, sets its
+initial password, and creates a session. Passwords and issued bearer tokens
+are stored as one-way digests/verifiers. Role and workspace access is resolved
+from the authenticated principal on each request. PostgreSQL mode rejects
+unauthenticated requests to protected routes even when no environment token is
+configured; health, onboarding, login, and invitation acceptance remain
+public. Login throttling uses shared PostgreSQL fixed-window counters for
+account and source-address buckets; memory mode is process-local. Email delivery
+and identity proof, MFA, and SSO/OIDC remain open.
+
+Run creation accepts an optional `Idempotency-Key`, replays successful
+requests, and rejects conflicting reuse. PostgreSQL enforces the key with a
+partial unique index. Startup marks synchronous runs stranded beyond the
+four-hour heartbeat threshold failed and records a recovery audit event.
+
+The API also exposes durable PostgreSQL-backed execution jobs for asynchronous
+agent runs. A separate worker claims each job atomically, invokes the same
+runtime, and records a linked run and terminal job state. Jobs are visible to
+their requester or workspace user administrators. Queued jobs can be cancelled
+immediately; running jobs accept a cooperative cancellation request that takes
+effect between context calls and before model execution for standalone agent
+jobs, or between workflow steps. A request during the final call may arrive too
+late to cancel completed work; successful run and job states remain successful.
+Retryable failed jobs can be manually retried with explicit lineage and
+idempotency. Workers renew a
+fenced lease every 20 seconds; stale jobs are
+reconciled after two minutes without a heartbeat. The worker cannot interrupt
+an external call already in progress. Automatic retries and production
+multi-tenant worker isolation remain open; see
+[product-execution-queue.md](product-execution-queue.md).
 
 Do not in this phase:
 
@@ -933,7 +976,29 @@ Do not in this phase:
 - Enable production-remediation actions.
 - Enable source-code writes.
 
+Backend v0 currently includes a seeded approval policy and request lifecycle,
+plus one approval-gated Jira comment capability. The approval surface is API
+only and authorizes the authenticated request principal (falling back to the
+seeded local developer only in local memory mode). The seeded local policy
+permits self-approval; organization/workspace defaults forbid it. A database
+compare-and-set on the pending approval allows only one API process to dispatch
+the approved action. Database state transitions are transactional, but the
+external Jira write cannot share the database transaction. Production reviewer
+identity verification, connector idempotency, and uncertain-result
+reconciliation remain open work. Startup and worker recovery move interrupted
+`EXECUTING` invocations to non-retryable `TIMED_OUT` with an explicit
+unknown-outcome audit record; they do not infer whether Jira applied the write.
+
 ## Phase 9: MCP Support
+
+Backend v0 now supports stateless MCP Streamable HTTP (`2026-07-28`). Admins
+discover tools, select an explicit read-only allowlist, and import compatible
+query schemas as installation-scoped capabilities. Calls route through the
+plugin gateway and share its schema validation and invocation tracking. The
+current adapter is read-only, bearer-token only, requires exact HTTPS host
+allowlisting, and does not support stdio or legacy handshake protocol versions.
+See [product-mcp-v0.md](product-mcp-v0.md). OAuth, async/task results, and broader
+input schemas remain open.
 
 Goal: add internal tool extensibility through MCP without weakening governance.
 
@@ -958,6 +1023,21 @@ Do not in this phase:
 - Bypass capability registration.
 
 ## Phase 10: Memory And Knowledge
+
+Backend v0 has explicit `MemoryItem` and `MemoryPolicy` contracts. The local
+runtime supports organization/workspace scoped records, expiry filtering,
+audited create/delete, and bounded retrieval through `MemoryContextBuilder`.
+Admins can select a retention class and optional expiry; expired items are
+hidden immediately, then physically deleted and audited at API startup and by
+the worker's 30-second maintenance loop.
+Open conversation threads also pass up to eight recent successful task/response
+turns (at most 24,000 characters) into each follow-up model call.
+All five memory policy scopes are retrievable: conversation-thread items require
+the matching open thread, workflow items require the matching workflow, and
+workspace/organization items follow their respective tenant scopes. Thread
+lifecycle, run binding, expiry checks, auditable deletion, and source citations
+are implemented. Semantic/vector indexing and ranking beyond lexical overlap
+are still open.
 
 Goal: add controlled memory after the execution and audit model is stable.
 

@@ -94,6 +94,22 @@ class ModelProfile(MutableOrgScopedContract):
     cost_budget_usd: Optional[
         Annotated[Decimal, Field(gt=Decimal("0"), le=Decimal("100000"))]
     ] = None
+    input_cost_per_million_tokens_usd: Optional[
+        Annotated[
+            Decimal,
+            Field(
+                ge=Decimal("0"), le=Decimal("100000"), max_digits=18, decimal_places=9
+            ),
+        ]
+    ] = None
+    output_cost_per_million_tokens_usd: Optional[
+        Annotated[
+            Decimal,
+            Field(
+                ge=Decimal("0"), le=Decimal("100000"), max_digits=18, decimal_places=9
+            ),
+        ]
+    ] = None
     fallback_model_profile_id: Optional[OpaqueId] = None
     status: ModelProfileStatus
 

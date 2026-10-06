@@ -188,6 +188,8 @@ def test_output_schema_accepts_only_json_compatible_values():
         agent_version(output_schema={"callable": object()})
     with pytest.raises(ValidationError):
         agent_version(output_schema={"not-finite": float("nan")})
+    with pytest.raises(ValidationError, match="valid JSON Schema"):
+        agent_version(output_schema={"type": "not-a-json-schema-type"})
 
 
 def test_active_definition_requires_current_version():

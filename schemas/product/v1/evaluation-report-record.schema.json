@@ -1,0 +1,367 @@
+{
+  "$defs": {
+    "EvaluationCase": {
+      "additionalProperties": false,
+      "description": "One task and its deterministic acceptance checks.",
+      "properties": {
+        "case_id": {
+          "maxLength": 96,
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9_.-]+$",
+          "title": "Case Id",
+          "type": "string"
+        },
+        "minimum_tool_calls": {
+          "default": 0,
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Minimum Tool Calls",
+          "type": "integer"
+        },
+        "must_contain": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 50,
+          "title": "Must Contain",
+          "type": "array"
+        },
+        "must_not_contain": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 50,
+          "title": "Must Not Contain",
+          "type": "array"
+        },
+        "required_sources": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 50,
+          "title": "Required Sources",
+          "type": "array"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "task": {
+          "maxLength": 12000,
+          "minLength": 1,
+          "title": "Task",
+          "type": "string"
+        }
+      },
+      "required": [
+        "case_id",
+        "task"
+      ],
+      "title": "EvaluationCase",
+      "type": "object"
+    },
+    "EvaluationCaseResult": {
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "title": "Case Id",
+          "type": "string"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/EvaluationCheck"
+          },
+          "title": "Checks",
+          "type": "array"
+        },
+        "duration_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Duration Ms"
+        },
+        "estimated_cost_usd": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,6}|(?=[\\d.]{1,19}0*$)\\d{0,6}\\.\\d{0,12}0*$)",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Estimated Cost Usd"
+        },
+        "input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Tokens"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Tokens"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Id"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "case_id",
+        "passed",
+        "checks"
+      ],
+      "title": "EvaluationCaseResult",
+      "type": "object"
+    },
+    "EvaluationCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Detail",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 96,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name",
+        "passed",
+        "detail"
+      ],
+      "title": "EvaluationCheck",
+      "type": "object"
+    },
+    "EvaluationReport": {
+      "additionalProperties": false,
+      "properties": {
+        "evaluation_id": {
+          "title": "Evaluation Id",
+          "type": "string"
+        },
+        "pass_rate": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Pass Rate",
+          "type": "number"
+        },
+        "passed_cases": {
+          "minimum": 0,
+          "title": "Passed Cases",
+          "type": "integer"
+        },
+        "results": {
+          "items": {
+            "$ref": "#/$defs/EvaluationCaseResult"
+          },
+          "title": "Results",
+          "type": "array"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "suite_id": {
+          "title": "Suite Id",
+          "type": "string"
+        },
+        "total_cases": {
+          "minimum": 1,
+          "title": "Total Cases",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "suite_id",
+        "evaluation_id",
+        "passed_cases",
+        "total_cases",
+        "pass_rate",
+        "results"
+      ],
+      "title": "EvaluationReport",
+      "type": "object"
+    },
+    "EvaluationSuite": {
+      "additionalProperties": false,
+      "description": "Versioned, portable set of representative agent tasks.",
+      "properties": {
+        "agent_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Agent Id",
+          "type": "string"
+        },
+        "cases": {
+          "items": {
+            "$ref": "#/$defs/EvaluationCase"
+          },
+          "maxItems": 500,
+          "minItems": 1,
+          "title": "Cases",
+          "type": "array"
+        },
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "suite_id": {
+          "maxLength": 96,
+          "minLength": 1,
+          "pattern": "^[a-zA-Z0-9_.-]+$",
+          "title": "Suite Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "suite_id",
+        "agent_id",
+        "cases"
+      ],
+      "title": "EvaluationSuite",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Workspace-scoped record submitted by an evaluation runner.",
+  "properties": {
+    "agent_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Agent Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "definition": {
+      "$ref": "#/$defs/EvaluationSuite"
+    },
+    "evaluation_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Evaluation Id",
+      "type": "string"
+    },
+    "org_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Org Id",
+      "type": "string"
+    },
+    "report": {
+      "$ref": "#/$defs/EvaluationReport"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "submitted_by_principal_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Submitted By Principal Id",
+      "type": "string"
+    },
+    "suite_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Suite Id",
+      "type": "string"
+    },
+    "workspace_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Workspace Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "created_at",
+    "org_id",
+    "workspace_id",
+    "evaluation_id",
+    "suite_id",
+    "agent_id",
+    "definition",
+    "report",
+    "submitted_by_principal_id"
+  ],
+  "title": "EvaluationReportRecord",
+  "type": "object"
+}

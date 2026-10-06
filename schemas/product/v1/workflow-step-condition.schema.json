@@ -1,0 +1,56 @@
+{
+  "$defs": {
+    "JsonValue": {},
+    "WorkflowConditionOperator": {
+      "enum": [
+        "exists",
+        "equals",
+        "not_equals"
+      ],
+      "title": "WorkflowConditionOperator",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Allow a workflow step only when a prior structured result matches.",
+  "properties": {
+    "expected_value": {
+      "$ref": "#/$defs/JsonValue"
+    },
+    "json_pointer": {
+      "maxLength": 512,
+      "title": "Json Pointer",
+      "type": "string"
+    },
+    "operator": {
+      "$ref": "#/$defs/WorkflowConditionOperator"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "source_agent_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Source Agent Id",
+      "type": "string"
+    },
+    "target_agent_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Target Agent Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "source_agent_id",
+    "target_agent_id",
+    "json_pointer",
+    "operator",
+    "expected_value"
+  ],
+  "title": "WorkflowStepCondition",
+  "type": "object"
+}

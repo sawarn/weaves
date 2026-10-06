@@ -2,13 +2,25 @@
 
 ## Status
 
-The product direction and first platform foundation are implemented through
-P5. P1 contracts, the P2 local runtime, P3 model gateway, P4 plugin gateway,
-and P5 local product API are available for v0 evaluation. The current API is
-uses a demo organization and local development identity. P6 dashboard is
-implemented. The product runtime now supports PostgreSQL persistence in Compose
-as well as its in-memory mode. Authentication, request-derived tenant scope,
-and real connector rollout remain future work.
+The product direction and v0 backend foundation are implemented through
+workflow execution. The API supports provider configuration, agent and
+workflow runs, knowledge and memory, read-only GitHub/Slack/Jira/MCP context,
+approval-backed Jira comments, persisted API credentials, and PostgreSQL-backed
+execution jobs. The dashboard is implemented for local evaluation.
+
+The product API provisions organizations and workspaces, resolves
+request-derived tenant scope, and supports human-user password sessions,
+invitations, service accounts, roles, and credentials. Email verification,
+MFA, SSO/OIDC, account recovery, and secure browser-cookie sessions are not
+implemented. Workflows can sequence up to ten agents, execute dependency graphs
+with multiple roots and `all`/`any` joins, select conditional routes based on
+validated structured output, and run bounded groups of adjacent independent
+steps concurrently. Cycles and loops are not implemented.
+PostgreSQL-backed queue workers
+renew fenced leases, reconcile stale jobs, and support cancellation at safe
+boundaries; automatic retries and production worker isolation are not
+implemented. A running external call cannot be interrupted. These remain
+explicit v0 and production-readiness limits.
 
 ## Product Direction
 
@@ -383,12 +395,12 @@ Add durable execution facts without adding runtime behavior.
 
 ### P2: Local Platform Runtime
 
-Status: implemented in `backend/weaves/product/runtime` as a deterministic,
-in-memory local runtime. It bootstraps scoped example configuration and
-executes one mock agent path through identity and role authorization, context
-retrieval, a typed tool invocation, an artifact, and an audit event. Contract
-and architecture tests cover this path. Persistent repositories and API
-integration are separate follow-on work.
+Status: implemented in `backend/weaves/product/runtime` with in-memory and
+PostgreSQL repositories. It bootstraps scoped local configuration and executes
+an agent path through principal/role authorization, context retrieval, typed
+tool invocation, artifact creation, and audit recording. Product records are
+strictly validated on persistence reads. Contract and architecture tests cover
+the local path.
 
 The implementation covers the org, workspace, principal, role, model profile,
 mock plugin installation, agent/version, workflow/version, run, artifact, and
@@ -408,37 +420,51 @@ before dispatching to its registered adapter.
 ### P4: Plugin Gateway
 
 Status: implemented in `backend/weaves/product/runtime/plugin_gateway.py`.
-The local runtime dispatches the mock `knowledge.search` capability through
-the gateway. It checks agent and workspace scope, installation status and
-capability grants, validates input and output schemas, bounds payload sizes,
-and records success or failure as a tool invocation and run audit trail. Only
-context-read capabilities are enabled in this v0; there is no real connector
-adapter yet.
+The gateway validates installation scope, capability grants, schemas, and
+payload bounds, and records invocation results in the run audit trail. Local
+knowledge and read-only GitHub, Slack, Jira, and allowlisted MCP context
+connectors are available. Jira comments are an approval-backed write action.
 
 ### P5: Product API
 
 Status: implemented in `backend/weaves/product/api/app.py` under `/api/v0`.
-Routes expose the local organization/workspace, model profiles, plugin
-capabilities and installations, agent create/update/read, workflow listing,
-synchronous run creation and inspection, artifacts, and audit events. The
-development identity is fixed, and all records live in memory, so this is a
-local evaluation API rather than a multi-user service.
+Routes expose organization/workspace records, provider and model profiles,
+plugin installation, agent create/update/read, workflow listing and execution,
+synchronous runs, durable execution jobs, threads, knowledge, memory,
+approvals, artifacts, credentials, and audit events. Bearer tokens resolve to
+active principals and role permissions. The onboarding endpoint provisions an
+organization, owner credential, default workspace, and initial runtime
+configuration. Organization admins can provision additional workspaces and
+the API validates workspace selection against role bindings. Workspace admins
+can provision human principals with explicit workspace permissions and one-time
+bearer tokens for secure out-of-band handoff. Organization role admins can
+create reusable roles and bind or remove them within authorized scopes. User
+suspension revokes credentials; reactivation issues a replacement. End-to-end
+API tests cover onboarding, agent runs in two workspaces, role changes,
+restricted user access, cross-tenant workspace rejection, and approval policy
+changes taking effect in the protected action flow. Email delivery and
+ownership verification, sign-in/session lifecycle, signup abuse controls, and
+production tenant isolation hardening remain future work.
 
 ### P6: First Dashboard
 
 Status: implemented in `backend/weaves/product/api/static/`. The platform API
 serves a responsive local dashboard at `/` with overview metrics, agent
-creation and version updates, a run lab with prompt examples and execution
-trace, run and workflow inspection, connection and model-profile views,
-OpenAI model catalog discovery, and artifact/audit inspection. Discovered
-models become selectable agent profiles. This is a local evaluation UI; it
-does not add authentication or durable state.
+creation and version updates, a run lab with execution trace, run and workflow
+inspection, connection and model-profile views, provider model discovery, and
+artifact/audit inspection. The dashboard is an evaluation surface; configured
+bearer authentication is primarily exercised through the API.
 
 ### P7: First Real Workflow
 
-Add one complete workflow that uses the platform primitives. The recommended
-first workflow is an engineering assistant over GitHub, Slack, and Jira, because
-it exercises multiple data sources without making incident analysis the center.
+Status: linear workflows can be created from one to ten agents, managed, and
+executed by workflow ID. They can use enabled knowledge, GitHub, Slack, Jira,
+and MCP context capabilities. Jira comments can be proposed for a selected
+workflow step and executed through explicit approval. Dependency graphs with
+multiple roots, mutually exclusive conditional routes, and bounded parallel
+groups are supported. Cycles and loops remain future work. See
+[`product-workflows-v0.md`](product-workflows-v0.md) and
+[`product-connectors-v0.md`](product-connectors-v0.md).
 
 ## Phase 0 Decisions
 

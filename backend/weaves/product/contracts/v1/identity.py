@@ -55,6 +55,7 @@ class Permission(StrEnum):
     PLUGINS_MANAGE = "plugins.manage"
     ARTIFACTS_READ = "artifacts.read"
     ACTIONS_APPROVE = "actions.approve"
+    APPROVAL_POLICIES_MANAGE = "approval_policies.manage"
     AUDIT_READ = "audit.read"
 
 

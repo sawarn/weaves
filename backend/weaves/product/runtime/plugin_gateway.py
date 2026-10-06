@@ -12,8 +12,10 @@ from pydantic import ValidationError
 from weaves.product.contracts.v1 import (
     AgentVersion,
     CapabilityKind,
+    CapabilitySpec,
     InvocationStatus,
     PluginDescriptorStatus,
+    PluginInstallation,
     PluginInstallationBinding,
     PluginInstallationStatus,
 )
@@ -28,6 +30,15 @@ from weaves.product.runtime.repositories import Repository
 
 class CapabilityProvider(Protocol):
     def invoke(self, capability_id: str, payload: dict[str, Any]) -> dict[str, Any]: ...
+
+
+class InstallationAwareCapabilityProvider(Protocol):
+    def invoke_for_installation(
+        self,
+        capability_id: str,
+        payload: dict[str, Any],
+        installation: Any,
+    ) -> dict[str, Any]: ...
 
 
 class PluginGatewayError(RuntimeError):
@@ -55,7 +66,7 @@ class PluginGateway:
         self,
         descriptors: Repository[Any],
         installations: Repository[Any],
-        providers: Mapping[str, CapabilityProvider],
+        providers: Mapping[str, Any],
     ) -> None:
         self._descriptors = descriptors
         self._installations = installations
@@ -70,6 +81,7 @@ class PluginGateway:
         agent_version: AgentVersion,
         capability_id: str,
         payload: dict[str, Any],
+        approval_verified: bool = False,
     ) -> CapabilityResult:
         if agent_version.org_id != org_id or agent_version.workspace_id != workspace_id:
             raise PluginGatewayError(
@@ -113,6 +125,18 @@ class PluginGateway:
             raise PluginGatewayError(
                 "plugin.binding_invalid", "Plugin installation is invalid"
             ) from exc
+        if descriptor.configuration_schema is not None:
+            try:
+                _validate_payload(
+                    descriptor.configuration_schema,
+                    thaw_json_value(installation.configuration),
+                    "configuration",
+                )
+            except PluginGatewayError as exc:
+                raise PluginGatewayError(
+                    "plugin.configuration_invalid",
+                    "Plugin installation configuration is invalid",
+                ) from exc
         capability = next(
             (
                 item
@@ -125,23 +149,38 @@ class PluginGateway:
             raise PluginGatewayError(
                 "plugin.capability_unknown", "Capability is not registered"
             )
-        if capability.kind is not CapabilityKind.CONTEXT_READ:
+        if capability.kind is CapabilityKind.CONTEXT_READ:
+            pass
+        elif (
+            capability.kind is CapabilityKind.ACTION_WRITE
+            and capability.approval_supported
+            and approval_verified
+        ):
+            pass
+        else:
             raise PluginGatewayError(
                 "plugin.action_not_supported",
-                "Only context-read capabilities are enabled in v0",
+                "This capability requires an approved action request",
             )
         _validate_payload(capability.input_schema, payload, "input")
-        try:
-            provider = self._providers[descriptor.plugin_id]
-        except KeyError as exc:
+        provider = self._providers.get(descriptor.plugin_id) or self._providers.get(
+            descriptor.plugin_type
+        )
+        if provider is None:
             raise PluginGatewayError(
                 "plugin.provider_missing", "No provider is registered for this plugin"
-            ) from exc
+            )
 
         started_at = datetime.now(timezone.utc)
         started = perf_counter()
         try:
-            output = provider.invoke(capability_id, payload)
+            installation_dispatch = getattr(provider, "invoke_for_installation", None)
+            if callable(installation_dispatch):
+                output = installation_dispatch(capability_id, payload, installation)
+            else:
+                output = provider.invoke(capability_id, payload)
+        except PluginGatewayError:
+            raise
         except Exception as exc:
             raise PluginGatewayError(
                 "plugin.provider_error", "Capability provider failed"
@@ -163,6 +202,86 @@ class PluginGateway:
             finished_at=finished_at,
             duration_ms=max(0, int((perf_counter() - started) * 1000)),
         )
+
+    def validate_approved_action_request(
+        self,
+        *,
+        org_id: OpaqueId,
+        workspace_id: OpaqueId,
+        installation_id: OpaqueId,
+        agent_version: AgentVersion,
+        capability_id: str,
+        payload: dict[str, Any],
+    ) -> tuple[PluginInstallation, CapabilitySpec]:
+        """Validate an action proposal without dispatching it to the provider."""
+        if agent_version.org_id != org_id or agent_version.workspace_id != workspace_id:
+            raise PluginGatewayError(
+                "plugin.scope_mismatch", "Agent is outside the requested scope"
+            )
+        if capability_id not in agent_version.allowed_capability_ids:
+            raise PluginGatewayError(
+                "plugin.capability_denied",
+                "Agent is not allowed to propose this action",
+            )
+        try:
+            installation = self._installations.get_scoped(
+                installation_id, org_id, workspace_id
+            )
+        except KeyError as exc:
+            raise PluginGatewayError(
+                "plugin.installation_not_found", "Plugin installation was not found"
+            ) from exc
+        if installation.status is not PluginInstallationStatus.ACTIVE:
+            raise PluginGatewayError(
+                "plugin.installation_disabled", "Plugin installation is disabled"
+            )
+        if capability_id not in installation.enabled_capability_ids:
+            raise PluginGatewayError(
+                "plugin.capability_disabled",
+                "Capability is not enabled for this installation",
+            )
+        try:
+            descriptor = self._descriptors.get(installation.plugin_id)
+            binding = PluginInstallationBinding(
+                descriptor=descriptor, installation=installation
+            )
+        except (KeyError, ValidationError) as exc:
+            raise PluginGatewayError(
+                "plugin.binding_invalid", "Plugin installation is invalid"
+            ) from exc
+        if descriptor.status is not PluginDescriptorStatus.ACTIVE:
+            raise PluginGatewayError("plugin.descriptor_disabled", "Plugin is disabled")
+        if descriptor.configuration_schema is not None:
+            try:
+                _validate_payload(
+                    descriptor.configuration_schema,
+                    thaw_json_value(installation.configuration),
+                    "configuration",
+                )
+            except PluginGatewayError as exc:
+                raise PluginGatewayError(
+                    "plugin.configuration_invalid",
+                    "Plugin installation configuration is invalid",
+                ) from exc
+        capability = next(
+            (
+                item
+                for item in binding.descriptor.capability_manifest
+                if item.capability_id == capability_id
+            ),
+            None,
+        )
+        if (
+            capability is None
+            or capability.kind is not CapabilityKind.ACTION_WRITE
+            or not capability.approval_supported
+        ):
+            raise PluginGatewayError(
+                "plugin.action_not_supported",
+                "This action is not available for approval",
+            )
+        _validate_payload(capability.input_schema, payload, "input")
+        return installation, capability
 
 
 def _validate_payload(

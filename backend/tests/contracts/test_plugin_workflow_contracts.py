@@ -13,8 +13,13 @@ from weaves.product.contracts.v1 import (
     PluginInstallationStatus,
     RiskLevel,
     WorkflowBundle,
+    WorkflowConditionOperator,
     WorkflowDefinition,
+    WorkflowJoinPolicy,
+    WorkflowParallelGroup,
     WorkflowStatus,
+    WorkflowStepCondition,
+    WorkflowStepDependency,
     WorkflowVersion,
 )
 
@@ -193,6 +198,79 @@ def test_workflow_version_requires_registered_looking_handler_key(handler_key):
 def test_workflow_agent_version_references_must_be_unique():
     with pytest.raises(ValidationError):
         workflow_version(agent_version_ids=("agent-v1", "agent-v1"))
+
+
+def test_workflow_parallel_groups_are_unique_and_cannot_overlap():
+    group = WorkflowParallelGroup(agent_ids=("reviewer", "risk-checker"))
+    assert group.agent_ids == ("reviewer", "risk-checker")
+    with pytest.raises(ValidationError, match="unique"):
+        WorkflowParallelGroup(agent_ids=("reviewer", "reviewer"))
+    with pytest.raises(ValidationError, match="share workflow steps"):
+        workflow_version(
+            parallel_groups=(
+                group,
+                WorkflowParallelGroup(agent_ids=("risk-checker", "summary")),
+            )
+        )
+
+
+def test_workflow_step_dependencies_validate_join_policy_and_references():
+    dependency = WorkflowStepDependency(
+        target_agent_id="summary",
+        depends_on_agent_ids=("reviewer", "risk-checker"),
+        join_policy=WorkflowJoinPolicy.ANY,
+    )
+    assert dependency.join_policy is WorkflowJoinPolicy.ANY
+    with pytest.raises(ValidationError, match="unique"):
+        WorkflowStepDependency(
+            target_agent_id="summary",
+            depends_on_agent_ids=("reviewer", "reviewer"),
+        )
+    with pytest.raises(ValidationError, match="itself"):
+        WorkflowStepDependency(
+            target_agent_id="summary", depends_on_agent_ids=("summary",)
+        )
+    with pytest.raises(ValidationError, match="dependency policy"):
+        workflow_version(
+            step_dependencies=(
+                dependency,
+                dependency.model_copy(update={"join_policy": WorkflowJoinPolicy.ALL}),
+            )
+        )
+
+
+def test_workflow_step_condition_requires_a_valid_operator_and_json_pointer():
+    condition = WorkflowStepCondition(
+        source_agent_id="router",
+        target_agent_id="reviewer",
+        json_pointer="/decision/route",
+        operator=WorkflowConditionOperator.EQUALS,
+        expected_value="review",
+    )
+    assert condition.expected_value == "review"
+    with pytest.raises(ValidationError, match="expected_value"):
+        WorkflowStepCondition(
+            source_agent_id="router",
+            target_agent_id="reviewer",
+            json_pointer="/decision/route",
+            operator=WorkflowConditionOperator.EQUALS,
+        )
+    with pytest.raises(ValidationError, match="invalid escape"):
+        WorkflowStepCondition(
+            source_agent_id="router",
+            target_agent_id="reviewer",
+            json_pointer="/decision/~2route",
+            operator=WorkflowConditionOperator.EXISTS,
+            expected_value=None,
+        )
+    with pytest.raises(ValidationError, match="credential-shaped fields"):
+        WorkflowStepCondition(
+            source_agent_id="router",
+            target_agent_id="reviewer",
+            json_pointer="/decision",
+            operator=WorkflowConditionOperator.EQUALS,
+            expected_value={"access_token": "never-store"},
+        )
 
 
 def test_workflow_inputs_and_outputs_must_be_valid_json_schema():

@@ -15,7 +15,7 @@
           "type": "integer"
         },
         "source_ref": {
-          "maxLength": 128,
+          "maxLength": 256,
           "minLength": 1,
           "title": "Source Ref",
           "type": "string"
@@ -190,7 +190,7 @@
     },
     "summary": {
       "default": "",
-      "maxLength": 2000,
+      "maxLength": 120000,
       "title": "Summary",
       "type": "string"
     },

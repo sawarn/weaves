@@ -54,7 +54,7 @@ monolith plus worker. Do not split it into independently deployed services.
 | Area | Development / POC choice |
 |---|---|
 | Backend | Python 3.12+, FastAPI, Pydantic v2 |
-| Data | PostgreSQL in Docker Compose; SQLAlchemy 2.x + Alembic |
+| Data | PostgreSQL in Docker Compose; Psycopg 3 behind repository interfaces, with versioned SQL migrations |
 | Background work | A PostgreSQL jobs table and a worker process polling for jobs |
 | UI | Small Next.js + TypeScript workspace for submitting a task and viewing its run; use API/CLI only if that is faster for the first demo |
 | Model | One real provider adapter plus a mock adapter for tests and offline development |

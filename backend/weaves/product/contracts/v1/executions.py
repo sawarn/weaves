@@ -2,6 +2,7 @@
 
 import json
 import re
+from decimal import Decimal
 from typing import Any, Optional
 
 from pydantic import (
@@ -28,10 +29,21 @@ from weaves.product.contracts.v1.json_data import (
 from weaves.product.contracts.v1.plugins import Identifier, RiskLevel
 from weaves.product.contracts.v1.workflows import WorkflowVersion
 
+MAX_AGENT_RUN_OUTPUT_SUMMARY_BYTES = 2_097_152
+
 
 class RunStatus(StrEnum):
     QUEUED = "queued"
     RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class ExecutionJobStatus(StrEnum):
+    QUEUED = "queued"
+    RUNNING = "running"
+    CANCEL_REQUESTED = "cancel_requested"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
     CANCELLED = "cancelled"
@@ -55,6 +67,25 @@ class ApprovalStatus(StrEnum):
     REJECTED = "rejected"
     EXPIRED = "expired"
     CANCELLED = "cancelled"
+
+
+class ApprovalPolicy(MutableWorkspaceScopedContract):
+    """Workspace policy deciding which capability risks require human review."""
+
+    approval_policy_id: OpaqueId
+    name: str = Field(min_length=1, max_length=160)
+    required_risk_levels: tuple[RiskLevel, ...] = Field(
+        default=(RiskLevel.MEDIUM, RiskLevel.HIGH, RiskLevel.CRITICAL),
+        max_length=4,
+    )
+    allow_self_approval: bool = False
+    enabled: bool = True
+
+    @model_validator(mode="after")
+    def risk_levels_are_unique(self) -> "ApprovalPolicy":
+        if len(self.required_risk_levels) != len(set(self.required_risk_levels)):
+            raise ValueError("required risk levels must be unique")
+        return self
 
 
 class ArtifactStatus(StrEnum):
@@ -132,6 +163,121 @@ class WorkflowRun(MutableWorkspaceScopedContract):
         return self
 
 
+class ExecutionJob(MutableWorkspaceScopedContract):
+    """Durable request envelope for work processed by a separate worker."""
+
+    job_id: OpaqueId
+    requested_by_principal_id: OpaqueId
+    task: str = Field(min_length=1, max_length=12_000)
+    agent_id: Optional[OpaqueId] = None
+    workflow_id: Optional[OpaqueId] = None
+    workflow_version_id: Optional[OpaqueId] = None
+    thread_id: Optional[OpaqueId] = None
+    trigger_id: Optional[OpaqueId] = None
+    trigger_event_id: Optional[OpaqueId] = None
+    schedule_id: Optional[OpaqueId] = None
+    schedule_occurrence_at: Optional[AwareDatetime] = None
+    evaluation_id: Optional[OpaqueId] = None
+    evaluation_suite_id: Optional[OpaqueId] = None
+    retry_of_job_id: Optional[OpaqueId] = None
+    idempotency_key: Optional[OpaqueId] = None
+    status: ExecutionJobStatus
+    attempts: int = Field(default=0, ge=0, le=100)
+    worker_id: Optional[OpaqueId] = None
+    run_id: Optional[OpaqueId] = None
+    started_at: Optional[AwareDatetime] = None
+    finished_at: Optional[AwareDatetime] = None
+    error: Optional[ErrorSummary] = None
+
+    @model_validator(mode="after")
+    def fields_match_status(self) -> "ExecutionJob":
+        if self.agent_id is not None and self.workflow_id is not None:
+            raise ValueError("execution jobs cannot target both an agent and workflow")
+        if self.workflow_version_id is not None and self.workflow_id is None:
+            raise ValueError("workflow_version_id requires a workflow_id")
+        if (self.trigger_id is None) != (self.trigger_event_id is None):
+            raise ValueError("trigger jobs require both trigger and event IDs")
+        if (self.schedule_id is None) != (self.schedule_occurrence_at is None):
+            raise ValueError("scheduled jobs require both schedule and occurrence IDs")
+        if (self.evaluation_id is None) != (self.evaluation_suite_id is None):
+            raise ValueError("evaluation jobs require both evaluation IDs")
+        if (
+            sum(
+                source is not None
+                for source in (self.trigger_id, self.schedule_id, self.evaluation_id)
+            )
+            > 1
+        ):
+            raise ValueError("execution jobs cannot have multiple trigger sources")
+        if (self.trigger_id is not None or self.schedule_id is not None) and (
+            self.workflow_id is None
+        ):
+            raise ValueError("workflow triggers can only enqueue workflow jobs")
+        if self.evaluation_id is not None and (
+            self.agent_id is not None or self.workflow_id is not None
+        ):
+            raise ValueError("evaluation jobs cannot target an agent or workflow")
+        if self.retry_of_job_id == self.job_id:
+            raise ValueError("execution jobs cannot retry themselves")
+        if self.retry_of_job_id is not None and self.idempotency_key is None:
+            raise ValueError("retried jobs require an idempotency key")
+        if self.status is ExecutionJobStatus.QUEUED:
+            if (
+                any(
+                    value is not None
+                    for value in (
+                        self.worker_id,
+                        self.run_id,
+                        self.started_at,
+                        self.finished_at,
+                        self.error,
+                    )
+                )
+                or self.attempts != 0
+            ):
+                raise ValueError("queued jobs cannot have execution state")
+        elif self.status in {
+            ExecutionJobStatus.RUNNING,
+            ExecutionJobStatus.CANCEL_REQUESTED,
+        }:
+            if (
+                self.attempts < 1
+                or self.worker_id is None
+                or self.started_at is None
+                or self.finished_at is not None
+                or self.error is not None
+            ):
+                raise ValueError("active jobs require worker and start state")
+        elif self.status is ExecutionJobStatus.SUCCEEDED:
+            if self.attempts < 1 or self.started_at is None or self.finished_at is None:
+                raise ValueError("terminal jobs require execution timestamps")
+            if (self.run_id is None) == (self.evaluation_id is None):
+                raise ValueError("succeeded jobs require one run or evaluation")
+            if self.error is not None:
+                raise ValueError("succeeded jobs cannot have an error")
+        elif self.status is ExecutionJobStatus.FAILED:
+            if self.attempts < 1 or self.started_at is None or self.finished_at is None:
+                raise ValueError("terminal jobs require execution timestamps")
+            if self.error is None:
+                raise ValueError("failed jobs require an error summary")
+        elif self.status is ExecutionJobStatus.CANCELLED:
+            if self.finished_at is None or self.error is not None:
+                raise ValueError("cancelled jobs require a finish time and no error")
+            if self.attempts == 0:
+                if any(
+                    value is not None
+                    for value in (self.worker_id, self.run_id, self.started_at)
+                ):
+                    raise ValueError(
+                        "cancelled queued jobs cannot have execution state"
+                    )
+            elif self.worker_id is None or self.started_at is None:
+                raise ValueError(
+                    "cancelled running jobs require worker and start state"
+                )
+        return self
+
+
 class AgentRun(MutableWorkspaceScopedContract):
     agent_run_id: OpaqueId
     run_id: OpaqueId
@@ -145,6 +291,9 @@ class AgentRun(MutableWorkspaceScopedContract):
     output_summary: Optional[dict[str, Any]] = None
     input_tokens: Optional[int] = Field(default=None, ge=0)
     output_tokens: Optional[int] = Field(default=None, ge=0)
+    estimated_cost_usd: Optional[Decimal] = Field(
+        default=None, ge=Decimal("0"), max_digits=18, decimal_places=12
+    )
     started_at: Optional[AwareDatetime] = None
     finished_at: Optional[AwareDatetime] = None
     error: Optional[ErrorSummary] = None
@@ -156,8 +305,18 @@ class AgentRun(MutableWorkspaceScopedContract):
             return None
         reject_credential_fields(value, info.field_name)
         frozen = freeze_json_value(value, info.field_name)
-        if len(json.dumps(thaw_json_value(frozen), allow_nan=False)) > 16_384:
-            raise ValueError(f"{info.field_name} must not exceed 16 KiB")
+        max_bytes = (
+            16_384
+            if info.field_name == "input_summary"
+            else MAX_AGENT_RUN_OUTPUT_SUMMARY_BYTES
+        )
+        encoded = json.dumps(
+            thaw_json_value(frozen), allow_nan=False, ensure_ascii=False
+        ).encode("utf-8")
+        if len(encoded) > max_bytes:
+            raise ValueError(
+                f"{info.field_name} must not exceed {max_bytes} serialized bytes"
+            )
         return frozen
 
     @field_serializer("input_summary", "output_summary")
@@ -266,7 +425,7 @@ class ToolInvocation(MutableWorkspaceScopedContract):
 
 class ArtifactProvenance(FrozenProductContract):
     source_type: Identifier
-    source_ref: OpaqueId
+    source_ref: str = Field(min_length=1, max_length=256)
     recorded_at: AwareDatetime
 
 
@@ -276,7 +435,7 @@ class Artifact(MutableWorkspaceScopedContract):
     agent_run_id: Optional[OpaqueId] = None
     artifact_type: Identifier
     title: str = Field(min_length=1, max_length=160)
-    summary: str = Field(default="", max_length=2000)
+    summary: str = Field(default="", max_length=120_000)
     content_ref: OpaqueId
     content_type: Identifier
     checksum: Optional[str] = Field(default=None, max_length=256)

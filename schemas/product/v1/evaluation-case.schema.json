@@ -1,0 +1,65 @@
+{
+  "additionalProperties": false,
+  "description": "One task and its deterministic acceptance checks.",
+  "properties": {
+    "case_id": {
+      "maxLength": 96,
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9_.-]+$",
+      "title": "Case Id",
+      "type": "string"
+    },
+    "minimum_tool_calls": {
+      "default": 0,
+      "maximum": 100,
+      "minimum": 0,
+      "title": "Minimum Tool Calls",
+      "type": "integer"
+    },
+    "must_contain": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 50,
+      "title": "Must Contain",
+      "type": "array"
+    },
+    "must_not_contain": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 50,
+      "title": "Must Not Contain",
+      "type": "array"
+    },
+    "required_sources": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 50,
+      "title": "Required Sources",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "task": {
+      "maxLength": 12000,
+      "minLength": 1,
+      "title": "Task",
+      "type": "string"
+    }
+  },
+  "required": [
+    "case_id",
+    "task"
+  ],
+  "title": "EvaluationCase",
+  "type": "object"
+}

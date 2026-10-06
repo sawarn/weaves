@@ -1,0 +1,49 @@
+{
+  "$defs": {
+    "WorkflowJoinPolicy": {
+      "enum": [
+        "all",
+        "any"
+      ],
+      "title": "WorkflowJoinPolicy",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Predecessor steps that must finish before a workflow step is eligible.",
+  "properties": {
+    "depends_on_agent_ids": {
+      "items": {
+        "maxLength": 128,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 9,
+      "minItems": 1,
+      "title": "Depends On Agent Ids",
+      "type": "array"
+    },
+    "join_policy": {
+      "$ref": "#/$defs/WorkflowJoinPolicy",
+      "default": "all"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "target_agent_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "title": "Target Agent Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "target_agent_id",
+    "depends_on_agent_ids"
+  ],
+  "title": "WorkflowStepDependency",
+  "type": "object"
+}

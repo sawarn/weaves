@@ -1,17 +1,51 @@
 services:
   product-api:
+    restart: unless-stopped
     build: ./backend
     command: uvicorn weaves.product.api.app:app --host 0.0.0.0 --port 8000
     environment:
       DATABASE_URL: postgresql://weaves:weaves@postgres:5432/weaves
-      MODEL_BASE_URL: ${MODEL_BASE_URL:-https://api.openai.com/v1}
+      WEAVES_API_TOKEN: ${WEAVES_API_TOKEN:-}
+      WEAVES_API_TOKENS: ${WEAVES_API_TOKENS:-}
+      WEAVES_SECRET_ENCRYPTION_KEY: ${WEAVES_SECRET_ENCRYPTION_KEY:-}
+      WEAVES_MCP_ALLOWED_HOSTS: ${WEAVES_MCP_ALLOWED_HOSTS:-}
+      MODEL_PROVIDER_TYPE: ${MODEL_PROVIDER_TYPE:-openai}
+      MODEL_BASE_URL: ${MODEL_BASE_URL:-}
       MODEL_API_KEY: ${MODEL_API_KEY:-}
       MODEL_NAME: ${MODEL_NAME:-gpt-4o-mini}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080,http://127.0.0.1:8080}
     ports:
-      - "8001:8000"
+      - "127.0.0.1:8001:8000"
     depends_on:
       postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/api/v0/health', timeout=2)",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  product-worker:
+    restart: unless-stopped
+    build: ./backend
+    command: python -m weaves.product.worker
+    environment:
+      DATABASE_URL: postgresql://weaves:weaves@postgres:5432/weaves
+      WEAVES_SECRET_ENCRYPTION_KEY: ${WEAVES_SECRET_ENCRYPTION_KEY:-}
+      WEAVES_MCP_ALLOWED_HOSTS: ${WEAVES_MCP_ALLOWED_HOSTS:-}
+      MODEL_PROVIDER_TYPE: ${MODEL_PROVIDER_TYPE:-openai}
+      MODEL_BASE_URL: ${MODEL_BASE_URL:-}
+      MODEL_API_KEY: ${MODEL_API_KEY:-}
+      MODEL_NAME: ${MODEL_NAME:-gpt-4o-mini}
+      WEAVES_WORKER_POLL_SECONDS: ${WEAVES_WORKER_POLL_SECONDS:-1}
+    depends_on:
+      product-api:
         condition: service_healthy
 
   postgres:
@@ -21,7 +55,7 @@ services:
       POSTGRES_USER: weaves
       POSTGRES_PASSWORD: weaves
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - weaves-postgres:/var/lib/postgresql/data
     healthcheck:
