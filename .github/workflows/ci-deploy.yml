@@ -107,7 +107,7 @@ jobs:
             --allow-unauthenticated \
             --service-account "weaves-api@${PROJECT_ID}.iam.gserviceaccount.com" \
             --add-cloudsql-instances "${PROJECT_ID}:${REGION}:${CLOUDSQL_INSTANCE}" \
-            --set-secrets "DATABASE_URL=weaves-database-url:1,WEAVES_SECRET_ENCRYPTION_KEY=weaves-fernet-key:1" \
+            --set-secrets "DATABASE_URL=weaves-database-url:latest,WEAVES_SECRET_ENCRYPTION_KEY=weaves-fernet-key:latest" \
             --update-env-vars "^|^WEAVES_ALLOW_ORGANIZATION_ONBOARDING=false|CORS_ORIGINS=https://app.weave-studio.in"
 
           FRONTEND_URL="$(gcloud run services describe weaves-frontend \
@@ -131,7 +131,7 @@ jobs:
             --command python \
             --args=-m,weaves.product.worker \
             --add-cloudsql-instances "${PROJECT_ID}:${REGION}:${CLOUDSQL_INSTANCE}" \
-            --set-secrets "DATABASE_URL=weaves-database-url:1,WEAVES_SECRET_ENCRYPTION_KEY=weaves-fernet-key:1"
+            --set-secrets "DATABASE_URL=weaves-database-url:latest,WEAVES_SECRET_ENCRYPTION_KEY=weaves-fernet-key:latest"
 
           API_URL="$(gcloud run services describe "$API_SERVICE" \
             --project "$PROJECT_ID" --region "$REGION" \
