@@ -33,7 +33,7 @@ docker buildx build --platform=linux/amd64 --no-cache --provenance=false --push 
 
 "$GCLOUD" run deploy "$FRONTEND_SERVICE" \
   --project "$PROJECT_ID" --region "$REGION" --image "$frontend_ref" \
-  --port 8080 --cpu 1 --memory 256Mi --max 3 --allow-unauthenticated \
+  --port 8080 --cpu 1 --memory 256Mi --max 3 --no-invoker-iam-check \
   --service-account "weaves-frontend@${PROJECT_ID}.iam.gserviceaccount.com" \
   --set-env-vars "^|^WEAVES_API_BASE=/api/v0|WEAVES_PUBLIC_REGISTRATION=false"
 frontend_url="$("$GCLOUD" run services describe "$FRONTEND_SERVICE" \
@@ -42,7 +42,7 @@ frontend_url="$("$GCLOUD" run services describe "$FRONTEND_SERVICE" \
 "$GCLOUD" run deploy "$API_SERVICE" \
   --project "$PROJECT_ID" --region "$REGION" --image "$backend_ref" \
   --port 8000 --cpu 1 --memory 1Gi --max 3 --concurrency 20 --timeout 900 \
-  --allow-unauthenticated \
+  --no-invoker-iam-check \
   --service-account "weaves-api@${PROJECT_ID}.iam.gserviceaccount.com" \
   --add-cloudsql-instances "$connection_name" \
   --set-secrets "DATABASE_URL=weaves-database-url:1,WEAVES_SECRET_ENCRYPTION_KEY=weaves-fernet-key:1,WEAVES_ORGANIZATION_ONBOARDING_TOKEN=weaves-onboarding-token:1" \

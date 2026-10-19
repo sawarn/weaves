@@ -104,7 +104,7 @@ jobs:
             --max 3 \
             --concurrency 20 \
             --timeout 900 \
-            --allow-unauthenticated \
+            --no-invoker-iam-check \
             --service-account "weaves-api@${PROJECT_ID}.iam.gserviceaccount.com" \
             --add-cloudsql-instances "${PROJECT_ID}:${REGION}:${CLOUDSQL_INSTANCE}" \
             --set-secrets "DATABASE_URL=weaves-database-url:latest,WEAVES_SECRET_ENCRYPTION_KEY=weaves-fernet-key:latest" \
