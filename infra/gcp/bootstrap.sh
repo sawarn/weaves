@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_ID="${PROJECT_ID:-weaves-510819}"
+PROJECT_ID="${PROJECT_ID:-weaves-platform-prod-2026}"
 REGION="${REGION:-asia-south1}"
 AR_REPOSITORY="${AR_REPOSITORY:-weaves}"
 SQL_INSTANCE="${SQL_INSTANCE:-weaves-db}"
@@ -118,14 +118,18 @@ if ! "$GCLOUD" sql instances describe "$SQL_INSTANCE" \
     --region="$REGION" \
     --database-version=POSTGRES_16 \
     --edition=ENTERPRISE \
-    --tier=db-g1-small \
+    --cpu=1 \
+    --memory=3840MiB \
     --storage-type=SSD \
-    --storage-size=10 \
+    --storage-size=20 \
     --storage-auto-increase \
-    --storage-auto-increase-limit=50 \
-    --availability-type=ZONAL \
+    --storage-auto-increase-limit=100 \
+    --availability-type=REGIONAL \
     --backup-start-time=18:00 \
-    --retained-backups-count=7 \
+    --retained-backups-count=14 \
+    --enable-point-in-time-recovery \
+    --retained-transaction-log-days=7 \
+    --require-ssl \
     --deletion-protection \
     --root-password="$root_password" \
     --quiet

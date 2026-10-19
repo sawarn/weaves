@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_ID="${PROJECT_ID:-weaves-510819}"
+PROJECT_ID="${PROJECT_ID:-weaves-platform-prod-2026}"
 REGION="${REGION:-asia-south1}"
 AR_REPOSITORY="${AR_REPOSITORY:-weaves}"
 SQL_INSTANCE="${SQL_INSTANCE:-weaves-db}"

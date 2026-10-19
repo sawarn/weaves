@@ -1,8 +1,9 @@
 # GCP deployment
 
 Production runs in `asia-south1` with a Cloud Run API, a one-instance Cloud Run
-worker pool, a public static frontend, and a small zonal Cloud SQL PostgreSQL
-instance. Runtime passwords, the database URL, encryption key, one-time
+worker pool, a public static frontend, and a regional high-availability Cloud
+SQL PostgreSQL instance with dedicated CPU, automated backups, and point-in-time
+recovery. Runtime passwords, the database URL, encryption key, one-time
 onboarding token, and owner credentials are generated directly into Secret
 Manager. They do not belong in repository files or GitHub settings.
 
@@ -37,8 +38,9 @@ the background worker, and runs the API smoke test. Owner credentials stay in
 Secret Manager and are loaded into the current process only when the workflows
 run their end-to-end checks.
 
-The first run can take several minutes while Cloud SQL is created. Later
-deployments happen from pushes to `main` after CI passes. Backend CI runs the
+The first run can take several minutes while Cloud SQL is created. Backend and
+frontend CI run on pull requests and pushes to `main`; production deployments
+are started manually with `workflow_dispatch` after CI passes. Backend CI runs the
 Python test, lint, type checks and container build; frontend CI runs the
 JavaScript check and container build. Successful main-branch builds deploy the
 service and worker or frontend, then run the API smoke test or Playwright
