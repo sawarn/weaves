@@ -54,7 +54,8 @@ ensure_secret() {
 ensure_service_account() {
   local account="$1"
   local display_name="$2"
-  if ! "$GCLOUD" iam service-accounts describe "$account" \
+  local account_email="${account}@${SA_DOMAIN}"
+  if ! "$GCLOUD" iam service-accounts describe "$account_email" \
     --project="$PROJECT_ID" >/dev/null 2>&1; then
     "$GCLOUD" iam service-accounts create "$account" \
       --project="$PROJECT_ID" --display-name="$display_name" --quiet >/dev/null
