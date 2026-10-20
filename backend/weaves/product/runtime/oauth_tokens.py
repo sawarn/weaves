@@ -87,24 +87,27 @@ class OAuthTokenResolver:
         if response.is_error:
             raise ValueError(f"OAuth refresh failed with HTTP {response.status_code}")
         try:
-            payload = response.json()
+            token_response: Any = response.json()
         except ValueError as exc:
             raise ValueError("OAuth provider returned an invalid refresh response") from exc
-        if not isinstance(payload, dict) or payload.get("ok") is False:
+        if not isinstance(token_response, dict) or token_response.get("ok") is False:
             raise ValueError("OAuth provider rejected token refresh")
-        access_token = payload.get("access_token")
-        next_refresh = payload.get("refresh_token") or refresh_token
-        expires_in = payload.get("expires_in")
-        if not isinstance(access_token, str) or not access_token:
+        next_access_token = token_response.get("access_token")
+        next_refresh_token = token_response.get("refresh_token") or refresh_token
+        raw_expires_in = token_response.get("expires_in")
+        if not isinstance(next_access_token, str) or not next_access_token:
             raise ValueError("OAuth refresh did not return an access token")
-        if not isinstance(expires_in, (int, float)):
-            expires_in = 3600
+        expires_in = (
+            int(raw_expires_in)
+            if isinstance(raw_expires_in, (int, float))
+            else 3600
+        )
         return {
             "weaves_oauth": True,
             "provider": provider,
-            "access_token": access_token,
-            "refresh_token": next_refresh,
+            "access_token": next_access_token,
+            "refresh_token": next_refresh_token,
             "expires_at": (
-                datetime.now(timezone.utc) + timedelta(seconds=int(expires_in))
+                datetime.now(timezone.utc) + timedelta(seconds=expires_in)
             ).isoformat(),
         }

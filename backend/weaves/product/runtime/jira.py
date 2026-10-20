@@ -222,7 +222,13 @@ class JiraReadPlugin:
         headers = {"Accept": "application/json"}
         if bearer:
             headers["Authorization"] = f"Bearer {token}"
-        auth = None if bearer else (email, token)
+        auth: tuple[str, str] | None = None
+        if not bearer:
+            if email is None:
+                raise PluginGatewayError(
+                    "plugin.configuration_invalid", "Jira account email is required"
+                )
+            auth = (email, token)
         try:
             response = self._client.request(
                 "POST" if body is not None else "GET",

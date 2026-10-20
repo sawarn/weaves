@@ -7,7 +7,7 @@ import os
 import re
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Any, Literal, cast
 from urllib.parse import urlencode, urlparse
 
 import httpx
@@ -40,6 +40,27 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _state_string(record: OAuthAuthorizationState, key: str) -> str:
+    value = record.configuration.get(key)
+    if not isinstance(value, str):
+        raise HTTPException(status_code=400, detail="OAuth state configuration is invalid")
+    return value
+
+
+def _state_strings(record: OAuthAuthorizationState, key: str) -> tuple[str, ...]:
+    value = record.configuration.get(key)
+    if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+        raise HTTPException(status_code=400, detail="OAuth state configuration is invalid")
+    return tuple(cast(list[str], value))
+
+
+def _state_bool(record: OAuthAuthorizationState, key: str) -> bool:
+    value = record.configuration.get(key)
+    if not isinstance(value, bool):
+        raise HTTPException(status_code=400, detail="OAuth state configuration is invalid")
+    return value
+
+
 def register_oauth_routes(app: FastAPI, platform: LocalPlatformRuntime) -> None:
     """Register authenticated start routes and unauthenticated OAuth callbacks."""
     client = httpx.Client()
@@ -51,7 +72,13 @@ def register_oauth_routes(app: FastAPI, platform: LocalPlatformRuntime) -> None:
             raise HTTPException(status_code=503, detail="Connector OAuth is not configured")
         return f"{api_base}/api/v0/oauth/{path}"
 
-    def state_record(provider: str, configuration: dict[str, Any], *, step: str = "authorize", secret_ref: str | None = None) -> OAuthAuthorizationState:
+    def state_record(
+        provider: Literal["github", "slack", "jira"],
+        configuration: dict[str, Any],
+        *,
+        step: Literal["authorize", "github_install"] = "authorize",
+        secret_ref: str | None = None,
+    ) -> OAuthAuthorizationState:
         principal = platform.authenticate_principal("local-developer")
         principal = effective_principal_id(principal)
         platform.authorize(principal, Permission.PLUGINS_MANAGE)
@@ -71,7 +98,11 @@ def register_oauth_routes(app: FastAPI, platform: LocalPlatformRuntime) -> None:
         platform.oauth_authorization_states.create(record)
         return record
 
-    def take_state(value: str, provider: str, step: str = "authorize") -> OAuthAuthorizationState:
+    def take_state(
+        value: str,
+        provider: Literal["github", "slack", "jira"],
+        step: Literal["authorize", "github_install"] = "authorize",
+    ) -> OAuthAuthorizationState:
         try:
             record = platform.oauth_authorization_states.consume(value)
         except KeyError as exc:
@@ -80,7 +111,7 @@ def register_oauth_routes(app: FastAPI, platform: LocalPlatformRuntime) -> None:
             raise HTTPException(status_code=400, detail="Authorization state is invalid or expired")
         return record
 
-    def discard_state(value: str, provider: str) -> None:
+    def discard_state(value: str, provider: Literal["github", "slack", "jira"]) -> None:
         try:
             take_state(value, provider)
         except HTTPException:
@@ -96,13 +127,25 @@ def register_oauth_routes(app: FastAPI, platform: LocalPlatformRuntime) -> None:
             status_code=303,
         )
 
-    def exchange(url: str, *, data: dict[str, str], auth: tuple[str, str] | None = None, json_payload: bool = False) -> dict[str, Any]:
+    def exchange(
+        url: str,
+        *,
+        data: dict[str, str],
+        auth: tuple[str, str] | None = None,
+        json_payload: bool = False,
+    ) -> dict[str, Any]:
         try:
-            response = client.post(
-                url, json=data if json_payload else None,
-                data=None if json_payload else data, auth=auth,
-                headers={"Accept": "application/json"}, timeout=20,
-            )
+            request_data: dict[str, Any] = {
+                "headers": {"Accept": "application/json"},
+                "timeout": 20,
+            }
+            if json_payload:
+                request_data["json"] = data
+            else:
+                request_data["data"] = data
+            if auth is not None:
+                request_data["auth"] = auth
+            response = client.post(url, **request_data)
             response.raise_for_status()
             payload = response.json()
         except (httpx.HTTPError, ValueError) as exc:
@@ -153,7 +196,7 @@ def register_oauth_routes(app: FastAPI, platform: LocalPlatformRuntime) -> None:
                 raise HTTPException(status_code=422, detail="Select at least one repository")
             configuration["repositories"] = list(request.repositories)
             redirect = callback_url("github/callback")
-            state = state_record(provider, configuration)
+            state = state_record("github", configuration)
             return {"authorization_url": "https://github.com/login/oauth/authorize?" + urlencode({"client_id": client_id, "redirect_uri": redirect, "state": state.oauth_state_id})}
         if provider == "slack":
             client_id = os.environ.get("WEAVES_SLACK_OAUTH_CLIENT_ID", "").strip()
@@ -163,7 +206,7 @@ def register_oauth_routes(app: FastAPI, platform: LocalPlatformRuntime) -> None:
                 raise HTTPException(status_code=422, detail="Select at least one Slack channel")
             configuration.update({"channels": list(request.channels), "include_thread_replies": request.include_thread_replies})
             redirect = callback_url("slack/callback")
-            state = state_record(provider, configuration)
+            state = state_record("slack", configuration)
             scopes = "search:read,channels:history,groups:history"
             params = {"client_id": client_id, "redirect_uri": redirect, "state": state.oauth_state_id, "user_scope": scopes}
             return {"authorization_url": "https://slack.com/oauth/v2/authorize?" + urlencode(params)}
@@ -178,7 +221,7 @@ def register_oauth_routes(app: FastAPI, platform: LocalPlatformRuntime) -> None:
                 raise HTTPException(status_code=422, detail="Select at least one Jira project")
             configuration.update({"site_url": site_url, "project_keys": list(request.project_keys)})
             redirect = callback_url("jira/callback")
-            state = state_record(provider, configuration)
+            state = state_record("jira", configuration)
             params = {"audience": "api.atlassian.com", "client_id": client_id, "scope": "read:jira-work write:jira-work offline_access", "redirect_uri": redirect, "state": state.oauth_state_id, "response_type": "code", "prompt": "consent"}
             return {"authorization_url": "https://auth.atlassian.com/authorize?" + urlencode(params)}
         raise HTTPException(status_code=404, detail="OAuth connector is not supported")
@@ -233,9 +276,9 @@ def register_oauth_routes(app: FastAPI, platform: LocalPlatformRuntime) -> None:
         if not any(str(item.get("id")) == installation_id for item in installations if isinstance(item, dict)):
             platform.secret_store.delete(record.secret_ref)
             return finish("github", "failed")
-        repos = record.configuration.get("repositories", [])
+        repos = _state_strings(record, "repositories")
         try:
-            token = platform.github_app_token_provider.installation_token(installation_id, tuple(repos))
+            token = platform.github_app_token_provider.installation_token(installation_id, repos)
             response = client.get("https://api.github.com/installation/repositories?per_page=100", headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"}, timeout=15)
             response.raise_for_status()
             repository_rows = response.json().get("repositories", [])
@@ -246,7 +289,12 @@ def register_oauth_routes(app: FastAPI, platform: LocalPlatformRuntime) -> None:
             available = {item.get("full_name") for item in repository_rows if isinstance(item, dict)}
             if not set(repos).issubset(available):
                 raise ValueError("requested repo outside installation")
-            platform.create_github_app_installation(display_name=record.configuration["display_name"], github_installation_id=installation_id, repositories=tuple(repos), requested_by_principal_id=record.principal_id)
+            platform.create_github_app_installation(
+                display_name=_state_string(record, "display_name"),
+                github_installation_id=installation_id,
+                repositories=repos,
+                requested_by_principal_id=record.principal_id,
+            )
         except Exception:
             platform.secret_store.delete(record.secret_ref)
             return finish("github", "failed")
@@ -276,9 +324,9 @@ def register_oauth_routes(app: FastAPI, platform: LocalPlatformRuntime) -> None:
         bundle = token_bundle("slack", user, access_token=access_token)
         try:
             platform.create_slack_oauth_installation(
-                display_name=record.configuration["display_name"], token_bundle=bundle,
-                channels=tuple(record.configuration["channels"]),
-                include_thread_replies=record.configuration.get("include_thread_replies", False),
+                display_name=_state_string(record, "display_name"), token_bundle=bundle,
+                channels=_state_strings(record, "channels"),
+                include_thread_replies=_state_bool(record, "include_thread_replies"),
                 requested_by_principal_id=record.principal_id,
             )
         except Exception:
@@ -308,15 +356,16 @@ def register_oauth_routes(app: FastAPI, platform: LocalPlatformRuntime) -> None:
             resources = response.json()
         except (httpx.HTTPError, ValueError):
             return finish("jira", "failed")
-        expected_host = urlparse(record.configuration["site_url"]).hostname
+        site_url = _state_string(record, "site_url")
+        expected_host = urlparse(site_url).hostname
         resource = next((item for item in resources if isinstance(item, dict) and urlparse(item.get("url", "")).hostname == expected_host), None)
         if not resource or not isinstance(resource.get("id"), str):
             return finish("jira", "failed")
         try:
             platform.create_jira_oauth_installation(
-                display_name=record.configuration["display_name"], token_bundle=token_bundle("jira", payload),
-                site_url=record.configuration["site_url"], cloud_id=resource["id"],
-                project_keys=tuple(record.configuration["project_keys"]),
+                display_name=_state_string(record, "display_name"), token_bundle=token_bundle("jira", payload),
+                site_url=site_url, cloud_id=resource["id"],
+                project_keys=_state_strings(record, "project_keys"),
                 requested_by_principal_id=record.principal_id,
             )
         except Exception:

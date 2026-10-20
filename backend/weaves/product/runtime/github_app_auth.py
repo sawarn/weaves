@@ -111,9 +111,11 @@ class GitHubAppTokenProvider:
         signing_input = f"{header}.{payload}".encode("ascii")
         try:
             from cryptography.hazmat.primitives import hashes, serialization
-            from cryptography.hazmat.primitives.asymmetric import padding
+            from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
             key = serialization.load_pem_private_key(private_key.encode("utf-8"), password=None)
+            if not isinstance(key, rsa.RSAPrivateKey):
+                raise TypeError("GitHub App key must be RSA")
             signature = key.sign(signing_input, padding.PKCS1v15(), hashes.SHA256())
         except Exception as exc:
             raise PluginGatewayError(
