@@ -7,7 +7,6 @@ import json
 import os
 from datetime import datetime, timedelta, timezone
 from threading import RLock
-from typing import Any
 
 import httpx
 

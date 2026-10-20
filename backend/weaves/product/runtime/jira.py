@@ -35,7 +35,6 @@ class JiraReadPlugin:
     def healthcheck(self, installation: PluginInstallation) -> dict[str, str]:
         configuration = thaw_json_value(installation.configuration)
         project_keys = self._project_keys(configuration)
-        site_url = self._site_url(configuration)
         api_base_url = self._api_base_url(configuration)
         email = configuration.get("email")
         if configuration.get("auth_method") != "atlassian_3lo" and (

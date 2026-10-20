@@ -17,7 +17,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from weaves.product.contracts.v1 import OAuthAuthorizationState, Permission
 from weaves.product.runtime import LocalPlatformRuntime
-from weaves.product.runtime.request_identity import set_request_identity
+from weaves.product.runtime.request_identity import (
+    effective_org_id,
+    effective_principal_id,
+    effective_workspace_id,
+    set_request_identity,
+)
 
 
 class _OAuthStart(BaseModel):
@@ -48,8 +53,6 @@ def register_oauth_routes(app: FastAPI, platform: LocalPlatformRuntime) -> None:
 
     def state_record(provider: str, configuration: dict[str, Any], *, step: str = "authorize", secret_ref: str | None = None) -> OAuthAuthorizationState:
         principal = platform.authenticate_principal("local-developer")
-        from weaves.product.runtime.request_identity import effective_org_id, effective_workspace_id, effective_principal_id
-
         principal = effective_principal_id(principal)
         platform.authorize(principal, Permission.PLUGINS_MANAGE)
         now = _now()
