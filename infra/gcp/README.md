@@ -24,7 +24,7 @@ only nonsecret GCP identifiers as GitHub Actions repository variables. GitHub
 Actions authenticates through Workload Identity Federation; no service-account
 key is created.
 
-For the first deploy, clone `sawarn/weaves-app` beside this repository as
+For the first deploy, clone `weavelabs-pvt-ltd/weaves-app` beside this repository as
 `../weaves-app`, then run:
 
 ```sh

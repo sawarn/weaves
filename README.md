@@ -6,7 +6,7 @@ platform API, contracts, runtime, model and plugin gateways, and PostgreSQL
 storage adapter.
 
 The dashboard is maintained separately in
-[`sawarn/weaves-app`](https://github.com/sawarn/weaves-app).
+[`weavelabs-pvt-ltd/weaves-app`](https://github.com/weavelabs-pvt-ltd/weaves-app).
 
 ## Run the backend
 

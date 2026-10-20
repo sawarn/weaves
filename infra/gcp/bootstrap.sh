@@ -20,8 +20,8 @@ if [[ -z "$GCLOUD" ]]; then
   exit 1
 fi
 
-BACKEND_REPO="sawarn/weaves"
-FRONTEND_REPO="sawarn/weaves-app"
+BACKEND_REPO="weavelabs-pvt-ltd/weaves"
+FRONTEND_REPO="weavelabs-pvt-ltd/weaves-app"
 SA_DOMAIN="${PROJECT_ID}.iam.gserviceaccount.com"
 DEPLOYER_EMAIL="${DEPLOYER_SA}@${SA_DOMAIN}"
 API_EMAIL="${API_SA}@${SA_DOMAIN}"
@@ -238,7 +238,17 @@ if ! "$GCLOUD" iam workload-identity-pools providers describe "$WIF_PROVIDER" \
     --display-name="GitHub Weaves repositories" \
     --issuer-uri=https://token.actions.githubusercontent.com \
     --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.repository_owner=assertion.repository_owner,attribute.ref=assertion.ref" \
-    --attribute-condition="assertion.repository_owner == 'sawarn' && assertion.ref == 'refs/heads/main'" \
+    --attribute-condition="assertion.repository_owner == 'weavelabs-pvt-ltd' && assertion.ref == 'refs/heads/main'" \
+    --quiet >/dev/null
+else
+  "$GCLOUD" iam workload-identity-pools providers update-oidc "$WIF_PROVIDER" \
+    --project="$PROJECT_ID" \
+    --location=global \
+    --workload-identity-pool="$WIF_POOL" \
+    --display-name="GitHub Weaves repositories" \
+    --issuer-uri=https://token.actions.githubusercontent.com \
+    --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.repository_owner=assertion.repository_owner,attribute.ref=assertion.ref" \
+    --attribute-condition="assertion.repository_owner == 'weavelabs-pvt-ltd' && assertion.ref == 'refs/heads/main'" \
     --quiet >/dev/null
 fi
 
