@@ -14,6 +14,8 @@ from uuid import uuid4
 class SecretStore(Protocol):
     def put(self, secret: str) -> str: ...
 
+    def replace(self, secret_ref: str, secret: str) -> None: ...
+
     def get(self, secret_ref: str) -> str: ...
 
     def delete(self, secret_ref: str) -> None: ...
@@ -43,6 +45,12 @@ class InMemorySecretStore:
             except KeyError as exc:
                 raise KeyError("secret reference was not found") from exc
 
+    def replace(self, secret_ref: str, secret: str) -> None:
+        with self._lock:
+            if secret_ref not in self._values:
+                raise KeyError("secret reference was not found")
+            self._values[secret_ref] = secret
+
     def delete(self, secret_ref: str) -> None:
         with self._lock:
             self._values.pop(secret_ref, None)
@@ -58,6 +66,11 @@ class UnavailableSecretStore:
 
     def get(self, secret_ref: str) -> str:
         raise KeyError("secret reference was not found")
+
+    def replace(self, secret_ref: str, secret: str) -> None:
+        raise SecretStoreUnavailable(
+            "Set WEAVES_SECRET_ENCRYPTION_KEY before adding provider credentials"
+        )
 
     def delete(self, secret_ref: str) -> None:
         return None
@@ -116,6 +129,16 @@ class EncryptedPostgresSecretStore:
             raise SecretStoreUnavailable(
                 "stored provider credential is unreadable"
             ) from exc
+
+    def replace(self, secret_ref: str, secret: str) -> None:
+        ciphertext = self._cipher.encrypt(secret.encode("utf-8"))
+        with self._pool.connection() as connection:
+            result = connection.execute(
+                "UPDATE product_secrets SET ciphertext = %s, updated_at = now() WHERE secret_ref = %s",
+                (ciphertext, secret_ref),
+            )
+            if result.rowcount == 0:
+                raise KeyError("secret reference was not found")
 
     def delete(self, secret_ref: str) -> None:
         with self._pool.connection() as connection:

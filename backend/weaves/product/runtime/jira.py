@@ -36,16 +36,20 @@ class JiraReadPlugin:
         configuration = thaw_json_value(installation.configuration)
         project_keys = self._project_keys(configuration)
         site_url = self._site_url(configuration)
+        api_base_url = self._api_base_url(configuration)
         email = configuration.get("email")
-        if not isinstance(email, str) or "@" not in email:
+        if configuration.get("auth_method") != "atlassian_3lo" and (
+            not isinstance(email, str) or "@" not in email
+        ):
             raise PluginGatewayError(
                 "plugin.configuration_invalid", "Jira account email is invalid"
             )
         api_token = self._resolve_token(installation)
         project = self._request(
-            f"{site_url}/rest/api/3/project/{project_keys[0]}",
-            email,
+            f"{api_base_url}/rest/api/3/project/{project_keys[0]}",
+            email if isinstance(email, str) else None,
             api_token,
+            bearer=configuration.get("auth_method") == "atlassian_3lo",
             timeout=self._timeout_seconds,
         )
         key = project.get("key")
@@ -70,8 +74,10 @@ class JiraReadPlugin:
         configuration = thaw_json_value(installation.configuration)
         project_keys = self._project_keys(configuration)
         site_url = self._site_url(configuration)
+        api_base_url = self._api_base_url(configuration)
         email = configuration.get("email")
-        if not isinstance(email, str) or "@" not in email:
+        is_oauth = configuration.get("auth_method") == "atlassian_3lo"
+        if not is_oauth and (not isinstance(email, str) or "@" not in email):
             raise PluginGatewayError(
                 "plugin.configuration_invalid", "Jira account email is invalid"
             )
@@ -89,9 +95,10 @@ class JiraReadPlugin:
         if remaining <= 0:
             raise PluginGatewayError("plugin.timeout", "Jira request timed out")
         result = self._request(
-            f"{site_url}/rest/api/3/search/jql",
-            email,
+            f"{api_base_url}/rest/api/3/search/jql",
+            email if isinstance(email, str) else None,
             token,
+            bearer=is_oauth,
             body={
                 "jql": jql,
                 "maxResults": 5,
@@ -150,10 +157,12 @@ class JiraReadPlugin:
         configuration = thaw_json_value(installation.configuration)
         project_keys = self._project_keys(configuration)
         site_url = self._site_url(configuration)
+        api_base_url = self._api_base_url(configuration)
         email = configuration.get("email")
+        is_oauth = configuration.get("auth_method") == "atlassian_3lo"
         issue_key = payload.get("issue_key")
         comment = payload.get("comment")
-        if not isinstance(email, str) or "@" not in email:
+        if not is_oauth and (not isinstance(email, str) or "@" not in email):
             raise PluginGatewayError(
                 "plugin.configuration_invalid", "Jira account email is invalid"
             )
@@ -173,9 +182,10 @@ class JiraReadPlugin:
             )
         token = self._resolve_token(installation)
         result = self._request(
-            f"{site_url}/rest/api/3/issue/{issue_key}/comment",
-            email,
+            f"{api_base_url}/rest/api/3/issue/{issue_key}/comment",
+            email if isinstance(email, str) else None,
             token,
+            bearer=is_oauth,
             body={
                 "body": {
                     "type": "doc",
@@ -203,19 +213,24 @@ class JiraReadPlugin:
     def _request(
         self,
         url: str,
-        email: str,
+        email: Optional[str],
         token: str,
         *,
         body: Optional[dict[str, Any]] = None,
         timeout: float,
+        bearer: bool = False,
     ) -> dict[str, Any]:
+        headers = {"Accept": "application/json"}
+        if bearer:
+            headers["Authorization"] = f"Bearer {token}"
+        auth = None if bearer else (email, token)
         try:
             response = self._client.request(
                 "POST" if body is not None else "GET",
                 url,
                 json=body,
-                auth=(email, token),
-                headers={"Accept": "application/json"},
+                auth=auth,
+                headers=headers,
                 timeout=timeout,
             )
         except httpx.TimeoutException as exc:
@@ -248,7 +263,12 @@ class JiraReadPlugin:
                 "plugin.credential_missing", "Jira installation has no credential"
             )
         try:
-            token = self._secrets.resolve(installation.auth_ref)
+            resolver = getattr(self._secrets, "resolve_for_plugin", None)
+            token = (
+                resolver(installation.auth_ref, "jira")
+                if callable(resolver)
+                else self._secrets.resolve(installation.auth_ref)
+            )
         except Exception as exc:
             raise PluginGatewayError(
                 "plugin.credential_unavailable", "Jira credential could not be resolved"
@@ -258,6 +278,17 @@ class JiraReadPlugin:
                 "plugin.credential_unavailable", "Jira credential could not be resolved"
             )
         return token
+
+    @classmethod
+    def _api_base_url(cls, configuration: dict[str, Any]) -> str:
+        if configuration.get("auth_method") != "atlassian_3lo":
+            return cls._site_url(configuration)
+        cloud_id = configuration.get("cloud_id")
+        if not isinstance(cloud_id, str) or not re.fullmatch(r"[A-Za-z0-9-]{8,80}", cloud_id):
+            raise PluginGatewayError(
+                "plugin.configuration_invalid", "Jira cloud ID is invalid"
+            )
+        return f"https://api.atlassian.com/ex/jira/{cloud_id}"
 
     @staticmethod
     def _site_url(configuration: dict[str, Any]) -> str:

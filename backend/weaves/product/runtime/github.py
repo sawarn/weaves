@@ -17,6 +17,10 @@ class _Resolver(Protocol):
     def resolve(self, auth_ref: str) -> str: ...
 
 
+class _InstallationTokenProvider(Protocol):
+    def installation_token(self, installation_id: str, repositories: tuple[str, ...]) -> str: ...
+
+
 class GitHubReadPlugin:
     """Search issues and pull requests within configured repositories only."""
 
@@ -27,11 +31,13 @@ class GitHubReadPlugin:
         *,
         api_base_url: str = "https://api.github.com",
         timeout_seconds: float = 15.0,
+        installation_token_provider: _InstallationTokenProvider | None = None,
     ) -> None:
         self._secrets = secret_resolver
         self._client = client
         self._api_base_url = api_base_url.rstrip("/")
         self._timeout_seconds = timeout_seconds
+        self._installation_tokens = installation_token_provider
 
     def healthcheck(self, installation: PluginInstallation) -> dict[str, str]:
         token = self._resolve_token(installation)
@@ -183,6 +189,29 @@ class GitHubReadPlugin:
         return {"documents": documents}
 
     def _resolve_token(self, installation: PluginInstallation) -> str:
+        configuration = thaw_json_value(installation.configuration)
+        if configuration.get("auth_method") == "github_app":
+            installation_id = configuration.get("github_installation_id")
+            repositories = configuration.get("repositories", [])
+            if (
+                self._installation_tokens is None
+                or not isinstance(installation_id, str)
+                or not isinstance(repositories, list)
+                or any(not isinstance(item, str) for item in repositories)
+            ):
+                raise PluginGatewayError(
+                    "plugin.oauth_unavailable", "GitHub App authentication is unavailable"
+                )
+            try:
+                return self._installation_tokens.installation_token(
+                    installation_id, tuple(repositories)
+                )
+            except PluginGatewayError:
+                raise
+            except Exception as exc:
+                raise PluginGatewayError(
+                    "plugin.credential_unavailable", "GitHub installation token could not be issued"
+                ) from exc
         if not installation.auth_ref:
             raise PluginGatewayError(
                 "plugin.credential_missing", "GitHub installation has no credential"

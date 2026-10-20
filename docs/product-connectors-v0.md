@@ -7,19 +7,19 @@ run provenance path.
 
 ## Setup flow
 
-1. Create an installation with `POST /api/v0/plugin-installations`.
-2. Run `POST /api/v0/plugin-installations/{id}/healthcheck`.
-3. Create an agent with the matching capability ID in
+1. In the dashboard, open **Connections → Connect a tool**, choose GitHub, Slack, or Jira, set the resource allowlist, and continue to the provider sign-in page.
+2. The provider callback creates the installation after authorization. GitHub verifies that the app installation belongs to the initiating user.
+3. Run `POST /api/v0/plugin-installations/{id}/healthcheck`.
+4. Create an agent with the matching capability ID in
    `allowed_capability_ids`, or PATCH an existing agent to publish a new
    version with that capability.
-4. Start work with `POST /api/v0/runs`, then inspect the run, invocations,
+5. Start work with `POST /api/v0/runs`, then inspect the run, invocations,
    artifacts, and audit event.
 
-Connector credentials are accepted only on create/rotation requests. In
-PostgreSQL mode they require `WEAVES_SECRET_ENCRYPTION_KEY` and are stored as
-Fernet ciphertext in the secret table. List and detail responses omit both the
-credential and its internal reference. Memory-only mode keeps credentials in
-process memory.
+OAuth tokens and refresh tokens are stored encrypted in PostgreSQL and never
+returned from the API. Configure provider apps and callback URLs using
+[connector-oauth.md](connector-oauth.md). Legacy API-token create requests
+remain supported for existing integrations; dashboard connections use OAuth.
 
 `GET /api/v0/plugin-installations` returns installation status, whether a
 credential exists, and the last health-check time; it never returns the secret
@@ -32,6 +32,14 @@ the document count for that installation's workspace. External checks contact
 the provider and test the configured scope.
 
 ## GitHub
+
+The dashboard uses a GitHub App authorization flow. The user authorizes their
+GitHub account, installs the Weaves App, and selects repositories. Weaves checks
+the installation against the initiating user and mints short-lived tokens
+restricted to selected repositories. Configure the app as described in
+[connector-oauth.md](connector-oauth.md).
+
+The API retains a legacy fine-grained-token request for existing integrations:
 
 ```json
 {
@@ -47,6 +55,10 @@ repositories. Search qualifiers cannot replace the configured repository
 allowlist. The health check verifies access to the first configured repository.
 
 ## Slack
+
+The dashboard uses Slack OAuth v2. Users authorize the Weaves app for a
+workspace, and Weaves stores the returned user token and refresh token encrypted.
+The channel allowlist remains enforced by the connector.
 
 ```json
 {
@@ -72,6 +84,10 @@ rate-limited, Weaves keeps the matching message and continues. See Slack's
 references.
 
 ## Jira Cloud
+
+The dashboard uses Atlassian OAuth 2.0 (3LO). Users authorize a Jira site and
+Weaves binds the installation to its Atlassian cloud ID. Use browser OAuth for
+new connections; Atlassian recommends OAuth for cloud app integrations.
 
 ```json
 {

@@ -66,6 +66,7 @@ from weaves.product.contracts.v1 import (
     ModelProviderType,
     Organization,
     OrganizationStatus,
+    OAuthAuthorizationState,
     Permission,
     PluginDescriptor,
     PluginDescriptorStatus,
@@ -321,6 +322,9 @@ class LocalPlatformRuntime(EvaluationRuntimeMixin):
         self.installations = self._repository(
             "plugin_installations", "plugin_installation_id", PluginInstallation
         )
+        self.oauth_authorization_states = self._repository(
+            "oauth_authorization_states", "oauth_state_id", OAuthAuthorizationState
+        )
         self.agents = self._repository("agents", "id", AgentDefinition)
         self.agent_versions = self._repository(
             "agent_versions", "agent_version_id", AgentVersion
@@ -446,9 +450,17 @@ class LocalPlatformRuntime(EvaluationRuntimeMixin):
         self.model_gateway = ModelGateway(adapters)
         self.context = RepositoryKnowledgePlugin(self.knowledge_documents)
         self.memory_context = MemoryContextBuilder()
-        self.github_plugin = GitHubReadPlugin(secret_resolver, model_http_client)
-        self.slack_plugin = SlackReadPlugin(secret_resolver, model_http_client)
-        self.jira_plugin = JiraReadPlugin(secret_resolver, model_http_client)
+        from weaves.product.runtime.github_app_auth import GitHubAppTokenProvider
+        from weaves.product.runtime.oauth_tokens import OAuthTokenResolver
+
+        self.oauth_token_resolver = OAuthTokenResolver(self.secret_store, model_http_client)
+        self.github_app_token_provider = GitHubAppTokenProvider(model_http_client)
+        self.github_plugin = GitHubReadPlugin(
+            secret_resolver, model_http_client,
+            installation_token_provider=self.github_app_token_provider,
+        )
+        self.slack_plugin = SlackReadPlugin(self.oauth_token_resolver, model_http_client)
+        self.jira_plugin = JiraReadPlugin(self.oauth_token_resolver, model_http_client)
         self.mcp_plugin = McpHttpPlugin(secret_resolver, model_http_client)
         self.plugin_gateway = PluginGateway(
             self.plugins,
@@ -2488,6 +2500,110 @@ class LocalPlatformRuntime(EvaluationRuntimeMixin):
             )
         )
         return installation
+
+    def create_github_app_installation(
+        self,
+        *,
+        display_name: str,
+        github_installation_id: str,
+        repositories: tuple[str, ...],
+        requested_by_principal_id: str = "local-developer",
+    ) -> PluginInstallation:
+        """Create a GitHub App connection using ephemeral installation tokens."""
+        if not self._bootstrapped:
+            self.bootstrap()
+        requested_by_principal_id = effective_principal_id(requested_by_principal_id)
+        self.authorize(requested_by_principal_id, Permission.PLUGINS_MANAGE)
+        if not github_installation_id.isdigit():
+            raise ValueError("GitHub installation ID is invalid")
+        if not repositories or len(repositories) > 50 or len(set(repositories)) != len(repositories):
+            raise ValueError("configure between 1 and 50 unique repositories")
+        if any(re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", item) is None for item in repositories):
+            raise ValueError("repositories must use the owner/repository format")
+        installation_id = _id()
+        now = _now()
+        installation = PluginInstallation(
+            plugin_installation_id=installation_id,
+            org_id=effective_org_id(),
+            workspace_id=effective_workspace_id(),
+            plugin_id=self.plugins.get("github").plugin_id,
+            display_name=display_name,
+            auth_ref=None,
+            configuration={
+                "auth_method": "github_app",
+                "github_installation_id": github_installation_id,
+                "repositories": list(repositories),
+            },
+            enabled_capability_ids=("github.issues.search",),
+            status=PluginInstallationStatus.ACTIVE,
+            created_at=now,
+            updated_at=now,
+        )
+        self.installations.create(installation)
+        self.audit_events.create(
+            AuditEvent(
+                audit_event_id=_id(), org_id=installation.org_id,
+                target_scope=AuditTargetScope.WORKSPACE,
+                workspace_id=installation.workspace_id,
+                actor_principal_id=requested_by_principal_id,
+                action="plugin_installation.created", target_type="plugin_installation",
+                target_id=installation_id, summary="GitHub App installation connected",
+                request_id=installation_id,
+                metadata={"plugin_id": "github", "repository_count": len(repositories)},
+                created_at=now,
+            )
+        )
+        return installation
+
+    def create_slack_oauth_installation(
+        self, *, display_name: str, token_bundle: str, channels: tuple[str, ...],
+        include_thread_replies: bool = False,
+        requested_by_principal_id: str = "local-developer",
+    ) -> PluginInstallation:
+        """Store an encrypted Slack OAuth token bundle for a workspace."""
+        if not self._bootstrapped:
+            self.bootstrap()
+        requested_by_principal_id = effective_principal_id(requested_by_principal_id)
+        self.authorize(requested_by_principal_id, Permission.PLUGINS_MANAGE)
+        if not channels or len(channels) > 50 or len(set(channels)) != len(channels):
+            raise ValueError("configure between 1 and 50 unique Slack channels")
+        if any(re.fullmatch(r"[A-Za-z0-9_-]{1,80}", item) is None for item in channels):
+            raise ValueError("Slack channels must be channel names or IDs")
+        return self._create_external_context_installation(
+            plugin_id="slack", display_name=display_name, credential=token_bundle,
+            configuration={"auth_method": "slack_oauth_v2", "channels": list(channels),
+                **({"include_thread_replies": True} if include_thread_replies else {})},
+            capability_ids=("slack.messages.search",),
+            audit_metadata={"channel_count": len(channels), "auth_method": "slack_oauth_v2"},
+            requested_by_principal_id=requested_by_principal_id,
+        )
+
+    def create_jira_oauth_installation(
+        self, *, display_name: str, token_bundle: str, site_url: str, cloud_id: str,
+        project_keys: tuple[str, ...], requested_by_principal_id: str = "local-developer",
+    ) -> PluginInstallation:
+        """Store Atlassian 3LO credentials bound to an authorized Jira cloud."""
+        if not self._bootstrapped:
+            self.bootstrap()
+        requested_by_principal_id = effective_principal_id(requested_by_principal_id)
+        self.authorize(requested_by_principal_id, Permission.PLUGINS_MANAGE)
+        normalized_url = site_url.strip().rstrip("/")
+        if re.fullmatch(r"https://[A-Za-z0-9-]+\.atlassian\.net", normalized_url) is None:
+            raise ValueError("Jira site must be an https://<site>.atlassian.net URL")
+        if not cloud_id or len(cloud_id) > 128:
+            raise ValueError("Atlassian cloud ID is invalid")
+        if not project_keys or len(project_keys) > 50 or len(set(project_keys)) != len(project_keys):
+            raise ValueError("configure between 1 and 50 unique Jira projects")
+        if any(re.fullmatch(r"[A-Z][A-Z0-9_]{0,49}", item) is None for item in project_keys):
+            raise ValueError("Jira project keys must use uppercase letters, digits, and underscores")
+        return self._create_external_context_installation(
+            plugin_id="jira", display_name=display_name, credential=token_bundle,
+            configuration={"auth_method": "atlassian_3lo", "site_url": normalized_url,
+                "cloud_id": cloud_id, "project_keys": list(project_keys)},
+            capability_ids=("jira.issues.search",),
+            audit_metadata={"project_count": len(project_keys), "auth_method": "atlassian_3lo"},
+            requested_by_principal_id=requested_by_principal_id,
+        )
 
     def create_slack_installation(
         self,

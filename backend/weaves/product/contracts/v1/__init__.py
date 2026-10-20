@@ -86,6 +86,7 @@ from weaves.product.contracts.v1.models import (
     ModelProviderStatus,
     ModelProviderType,
 )
+from weaves.product.contracts.v1.oauth import OAuthAuthorizationState
 from weaves.product.contracts.v1.plugins import (
     CapabilityKind,
     CapabilitySpec,
@@ -146,6 +147,7 @@ __all__ = [
     "EvaluationSuiteRecord",
     "Organization",
     "OrganizationStatus",
+    "OAuthAuthorizationState",
     "AgentBudget",
     "AgentBundle",
     "AgentDefinition",

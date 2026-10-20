@@ -75,7 +75,10 @@ def _installation_view(
 ) -> dict[str, Any]:
     result = dump(installation)
     result.pop("auth_ref", None)
-    result["has_credentials"] = bool(installation.auth_ref)
+    configuration = result.get("configuration") or {}
+    auth_method = configuration.get("auth_method") if isinstance(configuration, dict) else None
+    result["authentication_method"] = auth_method or ("token" if installation.auth_ref else "none")
+    result["has_credentials"] = bool(installation.auth_ref) or auth_method == "github_app"
     return result
 
 

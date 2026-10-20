@@ -227,7 +227,12 @@ class SlackReadPlugin:
                 "plugin.credential_missing", "Slack installation has no credential"
             )
         try:
-            token = self._secrets.resolve(installation.auth_ref)
+            resolver = getattr(self._secrets, "resolve_for_plugin", None)
+            token = (
+                resolver(installation.auth_ref, "slack")
+                if callable(resolver)
+                else self._secrets.resolve(installation.auth_ref)
+            )
         except Exception as exc:
             raise PluginGatewayError(
                 "plugin.credential_unavailable",

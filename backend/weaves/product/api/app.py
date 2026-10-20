@@ -94,6 +94,12 @@ def create_app(runtime: Optional[LocalPlatformRuntime] = None) -> FastAPI:
             or request.url.path == "/api/v0/onboarding/organizations"
             or request.url.path == "/api/v0/auth/login"
             or request.url.path == "/api/v0/auth/accept-invitation"
+            or request.url.path in {
+                "/api/v0/oauth/github/callback",
+                "/api/v0/oauth/github/installation",
+                "/api/v0/oauth/slack/callback",
+                "/api/v0/oauth/jira/callback",
+            }
             or request.url.path.startswith("/api/v0/webhooks/")
             or not request.url.path.startswith("/api/v0/")
         ):
@@ -194,6 +200,9 @@ def create_app(runtime: Optional[LocalPlatformRuntime] = None) -> FastAPI:
     register_model_routes(app, platform, _dump)
 
     register_plugin_routes(app, platform, _dump)
+
+    from weaves.product.api.oauth import register_oauth_routes
+    register_oauth_routes(app, platform)
 
     register_context_routes(app, platform, _dump, execution_run_view)
 

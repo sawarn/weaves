@@ -136,6 +136,9 @@ jobs:
           API_URL="$(gcloud run services describe "$API_SERVICE" \
             --project "$PROJECT_ID" --region "$REGION" \
             --format='value(status.url)')"
+          gcloud run services update "$API_SERVICE" \
+            --project "$PROJECT_ID" --region "$REGION" \
+            --update-env-vars "^|^WEAVES_PUBLIC_API_BASE_URL=$API_URL|WEAVES_PUBLIC_FRONTEND_URL=https://app.weave-studio.in"
           echo "API deployed at $API_URL"
       - name: Load deployment smoke credentials from Secret Manager
         run: |

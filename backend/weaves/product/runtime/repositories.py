@@ -38,6 +38,8 @@ class Repository(Protocol[TContract]):
 
     def delete(self, record_id: OpaqueId) -> None: ...
 
+    def consume(self, record_id: OpaqueId) -> TContract: ...
+
     def list(self) -> tuple[TContract, ...]: ...
 
     def list_due(
@@ -155,6 +157,15 @@ class InMemoryRepository(Generic[TContract]):
             if record_id not in self._records:
                 raise KeyError(f"{self._id_field} not found: {record_id}")
             del self._records[record_id]
+
+    def consume(self, record_id: OpaqueId) -> TContract:
+        """Atomically return and remove a one-time record."""
+        with self._lock:
+            try:
+                record = self._records.pop(record_id)
+            except KeyError as exc:
+                raise KeyError(f"{self._id_field} not found: {record_id}") from exc
+            return self._clone(record)
 
     def list(self) -> tuple[TContract, ...]:
         with self._lock:
@@ -540,6 +551,17 @@ class PostgresRepository(Generic[TContract]):
             )
             if result.rowcount == 0:
                 raise KeyError(f"{self._id_field} not found: {record_id}")
+
+    def consume(self, record_id: OpaqueId) -> TContract:
+        """Atomically return and remove a one-time record."""
+        with self._pool.connection() as connection:
+            row = connection.execute(
+                "DELETE FROM product_records WHERE collection = %s AND record_id = %s RETURNING payload",
+                (self._collection, str(record_id)),
+            ).fetchone()
+        if row is None:
+            raise KeyError(f"{self._id_field} not found: {record_id}")
+        return self._deserialize(row[0])
 
     def list(self) -> tuple[TContract, ...]:
         with self._pool.connection() as connection:
